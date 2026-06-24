@@ -170,7 +170,7 @@ tr:last-child td{border-bottom:none;}
     </div>
   </div>
   <div class="header-actions">
-    <button class="refresh-btn" onclick="loadData()">↻</button>
+    <button class="refresh-btn" onclick="loadData();renderRooms2();renderTenants2();">↻</button>
   </div>
 </header>
 
@@ -545,10 +545,10 @@ let dataLoaded=false;
 
 /* ---- RATES (Google Sheets ตั้งค่า) ---- */
 const RATE_DEFAULTS={r_shop:3000,r_air:2700,r_normal:2000,r_water:25,r_electric:7,r_common:0,r_car:300,r_moto:100,r_car_slots:14,r_moto_slots:41};
-const RATE_LABELS={r_shop:'ร้านค้า',r_air:'ห้องแอร์',r_normal:'ห้องธรรมดา',r_water:'ค่าน้ำ (ต่อหน่วย)',r_electric:'ค่าไฟ (ต่อหน่วย)',r_common:'ค่าส่วนกลาง',r_car:'จอดรถยนต์',r_moto:'จอดมอเตอร์ไซค์'};
+const RATE_LABELS={r_shop:'ร้านค้า',r_air:'ห้องแอร์',r_normal:'ห้องธรรมดา',r_water:'ค่าน้ำ (ต่อหน่วย)',r_electric:'ค่าไฟ (ต่อหน่วย)',r_common:'ค่าส่วนกลาง',r_car:'จอดรถยนต์',r_moto:'จอดมอเตอร์ไซค์',r_car_slots:'ช่องจอดรถยนต์',r_moto_slots:'ช่องจอดมอเตอร์ไซค์'};
 const RATE_UNITS={r_air:'บาท/เดือน',r_normal:'บาท/เดือน',r_shop:'บาท/เดือน',r_water:'บาท/หน่วย',r_electric:'บาท/หน่วย',r_common:'บาท/เดือน',r_car:'บาท/คัน',r_moto:'บาท/คัน'};
 const RATE_SHEET_KEYS=['ห้องแอร์','ห้องธรรมดา','ร้านค้า','ค่าน้ำ','ค่าไฟ','ค่าส่วนกลาง','จอดรถยนต์','จอดมอเตอร์ไซค์'];
-const RATE_KEYS=Object.keys(RATE_DEFAULTS);
+const RATE_KEYS=['r_shop','r_air','r_normal','r_water','r_electric','r_common','r_car','r_moto','r_car_slots','r_moto_slots'];
 const RATE_KEY_MAP={'ห้องแอร์':'r_air','ห้องธรรมดา':'r_normal','ร้านค้า':'r_shop','ค่าน้ำ':'r_water','ค่าไฟ':'r_electric','ค่าส่วนกลาง':'r_common','จอดรถยนต์':'r_car','จอดมอเตอร์ไซค์':'r_moto'};
 
 async function fetchRatesFromSheet(){
@@ -1293,8 +1293,8 @@ function renderVehCard(t){
       document.getElementById('tdVehCard').innerHTML='<div style="padding:14px;font-size:12px;color:var(--text3);">ไม่มียานพาหนะ</div>';
     }else{
       let rows='';
-      cars.forEach((lock,i)=>{rows+=`<div style="display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--surface2);gap:12px;"><span style="font-size:18px;">🚗</span><span style="flex:1;font-size:12px;color:var(--text2);">รถยนต์ · คันที่ ${i+1}</span><div style="text-align:right;"><div style="font-size:9px;color:var(--text3);">ล็อกที่</div><div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--yellow);">${lock.trim()}</div></div></div>`;});
-      motos.forEach((lock,i)=>{rows+=`<div style="display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--surface2);gap:12px;"><span style="font-size:18px;">🏍️</span><span style="flex:1;font-size:12px;color:var(--text2);">มอเตอร์ไซค์ · คันที่ ${i+1}</span><div style="text-align:right;"><div style="font-size:9px;color:var(--text3);">ล็อกที่</div><div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--yellow);">${lock.trim()}</div></div></div>`;});
+      cars.forEach((lock,i)=>{const lpad=String(parseInt(lock.trim())||lock.trim()).padStart(2,'0');rows+=`<div style="display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--surface2);gap:12px;"><span style="font-size:18px;">🚗</span><span style="flex:1;font-size:12px;color:var(--text2);">รถยนต์ · คันที่ ${i+1}</span><div style="text-align:right;"><div style="font-size:9px;color:var(--text3);">ล็อกที่</div><div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--yellow);">${lpad}</div></div></div>`;});
+      motos.forEach((lock,i)=>{const lpad=String(parseInt(lock.trim())||lock.trim()).padStart(2,'0');rows+=`<div style="display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--surface2);gap:12px;"><span style="font-size:18px;">🏍️</span><span style="flex:1;font-size:12px;color:var(--text2);">มอเตอร์ไซค์ · คันที่ ${i+1}</span><div style="text-align:right;"><div style="font-size:9px;color:var(--text3);">ล็อกที่</div><div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--yellow);">${lpad}</div></div></div>`;});
       document.getElementById('tdVehCard').innerHTML=rows;
     }
     document.getElementById('tdVehCard').style.border='1px solid var(--border2)';
@@ -1516,9 +1516,10 @@ function renderTenants2(){
     // Vehicle badges
     const cars2=(t['รถยนต์ล็อก']||'').split(',').filter(Boolean);
     const motos2=(t['จักยานยนต์ล็อก']||'').split(',').filter(Boolean);
+    const padLock=l=>String(parseInt(l.trim())||l.trim()).padStart(2,'0');
     const vehBadges=[
-      ...cars2.map(l=>`<span style="background:#1a2a3a;color:var(--blue);font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">${l.trim()}</span>`),
-      ...motos2.map(l=>`<span style="background:#3a2a1a;color:var(--yellow);font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">${l.trim()}</span>`)
+      ...cars2.map(l=>`<span style="background:#1a2a3a;color:var(--blue);font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">${padLock(l)}</span>`),
+      ...motos2.map(l=>`<span style="background:#3a2a1a;color:var(--yellow);font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">${padLock(l)}</span>`)
     ].join('');
 
     return`${zoneHdr}<div class="room-list-row${isPast?' vacant':''}" onclick="openTenantDetail('${code}')">
