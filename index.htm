@@ -1857,22 +1857,31 @@ function showParkingPicker(type,currentSlot,callback){
   const available=total-usedOthers.length;
   const icon=type==='car'?'🚗':'🏍️';
   const label=type==='car'?'รถยนต์':'มอเตอร์ไซค์';
-  document.getElementById('parkingModalTitle').textContent=icon+' เลือกช่องจอด'+label;
-  document.getElementById('parkingModalSub').textContent='ว่าง '+available+' ช่อง / ทั้งหมด '+total+' ช่อง';
-  let grid='';
+  const titleEl=document.getElementById('parkingModalTitle');
+  const subEl=document.getElementById('parkingModalSub');
+  if(titleEl)titleEl.textContent=icon+' เลือกช่องจอด'+label;
+  if(subEl)subEl.textContent='ว่าง '+available+' ช่อง / ทั้งหมด '+total+' ช่อง';
+  const gridEl=document.getElementById('parkingSlotGrid');
+  if(!gridEl)return;
+  gridEl.innerHTML='';
   for(let i=1;i<=total;i++){
     const slot=String(i).padStart(2,'0');
     const isTaken=usedOthers.includes(slot)||usedOthers.includes(String(i));
     const isSel=parkingSelected===slot||parkingSelected===String(i);
+    const div=document.createElement('div');
+    div.textContent=slot;
+    div.style.cssText='padding:9px 4px;border-radius:7px;text-align:center;font-family:var(--mono);font-size:13px;font-weight:700;';
     if(isTaken){
-      grid+='<div style="padding:9px 4px;border-radius:7px;text-align:center;font-family:var(--mono);font-size:13px;font-weight:700;background:#111;color:#333;border:1.5px solid var(--border2);">'+slot+'</div>';
+      div.style.background='#111';div.style.color='#333';div.style.border='1.5px solid var(--border2)';
     }else if(isSel){
-      grid+='<div onclick="selectParkSlot(''+slot+'')" style="padding:9px 4px;border-radius:7px;text-align:center;font-family:var(--mono);font-size:13px;font-weight:700;background:#1a3a2a;color:var(--green);border:1.5px solid var(--green);cursor:pointer;">'+slot+'</div>';
+      div.style.background='#1a3a2a';div.style.color='var(--green)';div.style.border='1.5px solid var(--green)';div.style.cursor='pointer';
+      div.onclick=()=>selectParkSlot(slot);
     }else{
-      grid+='<div onclick="selectParkSlot(''+slot+'')" style="padding:9px 4px;border-radius:7px;text-align:center;font-family:var(--mono);font-size:13px;font-weight:700;background:var(--surface2);color:var(--text);border:1.5px solid var(--border2);cursor:pointer;">'+slot+'</div>';
+      div.style.background='var(--surface2)';div.style.color='var(--text)';div.style.border='1.5px solid var(--border2)';div.style.cursor='pointer';
+      div.onclick=()=>selectParkSlot(slot);
     }
+    gridEl.appendChild(div);
   }
-  document.getElementById('parkingSlotGrid').innerHTML=grid;
   updateParkingBtn();
   document.getElementById('parkingModal').style.display='flex';
 }
