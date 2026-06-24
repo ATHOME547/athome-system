@@ -1431,8 +1431,48 @@ function renderTenantDetail(){
     isPast?['วันออก',`<span style="color:var(--red);">${t['วันที่ออก']}</span>`]:null,
   ].filter(Boolean).map(([l,v])=>`<div style="display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--surface2);gap:10px;"><span style="font-size:12px;color:var(--text2);width:90px;flex-shrink:0;">${l}</span><span style="font-size:13px;font-weight:500;flex:1;">${v}</span></div>`).join('').replace(/border-bottom[^;]+;(?=[^<]*<\/div>\s*$)/,'');
 
-  // Vehicle card
-  renderVehCard(t);
+  // Rooms card - new layout
+  const activeRooms=rooms.filter(r=>!r['วันที่ออก']);
+  const pastRooms=rooms.filter(r=>!!r['วันที่ออก']);
+  const padLock=l=>String(parseInt((l||'').trim())||(l||'').trim()).padStart(2,'0');
+
+  const roomCardHtml=rooms.map((r,ri)=>{
+    const roomInfo=DATA.rooms.find(x=>normCode(x['ห้องเลขที่'])===normCode(r['ห้องเลขที่']||''));
+    const rent=roomInfo?roomInfo['ค่าเช่า']:'—';
+    const type=roomInfo?roomInfo['ประเภท']:'—';
+    const cars=(r['รถยนต์ล็อก']||'').split(',').filter(Boolean);
+    const motos=(r['จักยานยนต์ล็อก']||'').split(',').filter(Boolean);
+    const isActive=!r['วันที่ออก'];
+    const carRow=cars.length>0
+      ?cars.map((l,ci)=>`<span onclick="editRoomLockInline('car',${ri},${ci},'${padLock(l)}')" style="background:#1a2a3a;color:var(--blue);font-family:var(--mono);font-size:12px;font-weight:700;padding:3px 10px;border-radius:5px;cursor:pointer;">${padLock(l)} ✏️</span>`).join('')
+      :`<button onclick="editRoomAddLockInline('car',${ri})" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border2);padding:5px 12px;border-radius:7px;font-family:var(--font);font-size:11px;font-weight:600;cursor:pointer;">+ เลือกล็อก</button>`;
+    const motoRow=motos.length>0
+      ?motos.map((l,mi)=>`<span onclick="editRoomLockInline('moto',${ri},${mi},'${padLock(l)}')" style="background:#3a2a1a;color:var(--yellow);font-family:var(--mono);font-size:12px;font-weight:700;padding:3px 10px;border-radius:5px;cursor:pointer;">${padLock(l)} ✏️</span>`).join('')
+      :`<button onclick="editRoomAddLockInline('moto',${ri})" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border2);padding:5px 12px;border-radius:7px;font-family:var(--font);font-size:11px;font-weight:600;cursor:pointer;">+ เลือกล็อก</button>`;
+    return`<div style="padding:10px 14px;border-bottom:1px solid var(--surface2);${!isActive?'opacity:0.5':''}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <span style="background:#2a1a3a;color:#c084fc;font-family:var(--mono);font-size:13px;font-weight:700;padding:3px 10px;border-radius:6px;">${r['ห้องเลขที่']||'—'}</span>
+        <span style="font-size:11px;color:var(--text2);">${type} · ฿${rent}</span>
+        ${isActive?`<button onclick="returnRoomInline('${r['ห้องเลขที่']}')" style="background:transparent;border:none;color:var(--red);font-size:11px;cursor:pointer;font-family:var(--font);padding:0;">↩️ คืน</button>`:`<span style="font-size:10px;color:var(--red);">ออกแล้ว</span>`}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:15px;width:22px;">🚗</span>
+        <span style="font-size:12px;color:var(--text2);flex:1;">รถยนต์</span>
+        ${carRow}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:15px;width:22px;">🏍️</span>
+        <span style="font-size:12px;color:var(--text2);flex:1;">มอเตอร์ไซค์</span>
+        ${motoRow}
+      </div>
+    </div>`;
+  }).join('');
+
+  const isPastAll=rooms.every(r=>!!r['วันที่ออก']);
+  const addRoomBtn=isPastAll?'':`<div style="padding:10px 14px;"><button onclick="addRoomToTenant()" style="width:100%;padding:8px;background:transparent;border:1px dashed var(--border2);color:#c084fc;border-radius:8px;font-family:var(--font);font-size:12px;cursor:pointer;">+ เพิ่มห้องที่เช่า</button></div>`;
+
+  document.getElementById('tdVehCard').innerHTML=`<div style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;overflow:hidden;">${roomCardHtml}${addRoomBtn}</div>`;
+  document.getElementById('tdVehCard').style.cssText='margin-bottom:12px;';
 
   // Payment chart
   renderTdPayChart(t['ห้องเลขที่']||'');
