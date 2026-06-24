@@ -638,7 +638,12 @@ async function fetchSheet(name){
   const text=await res.text();
   const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
   const cols=json.table.cols.map(c=>c.label);
-  return(json.table.rows||[]).map(r=>Object.fromEntries(cols.map((c,i)=>[c,r.c[i]?(r.c[i].f||r.c[i].v):'']))).filter(r=>Object.values(r).some(v=>v!==''));
+  return(json.table.rows||[]).map(r=>Object.fromEntries(cols.map((c,i)=>{
+    const cell=r.c[i];
+    if(!cell||cell.v===null||cell.v===undefined)return[c,''];
+    const val=cell.f||cell.v;
+    return[c,String(val)];
+  }))).filter(r=>Object.values(r).some(v=>v!==''));
 }
 
 async function loadData(){
