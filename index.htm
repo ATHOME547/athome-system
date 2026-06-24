@@ -1445,9 +1445,13 @@ loadData();
       <div id="acModalRoom" style="font-size:13px;color:var(--text2);margin-top:4px;"></div>
     </div>
     <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;margin-bottom:16px;">
-      <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">บันทึกวันที่</div>
-      <input type="date" id="acModalDateInput" style="background:var(--surface);border:1.5px solid var(--green);color:var(--green);padding:8px 12px;border-radius:8px;font-family:var(--mono);font-size:16px;font-weight:700;text-align:center;width:100%;box-sizing:border-box;-webkit-appearance:none;" oninput="updateAcNext()">
-      <div id="acModalNext" style="font-size:10px;color:var(--text3);margin-top:6px;"></div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">บันทึกวันที่ (พ.ศ.)</div>
+      <div style="display:flex;gap:6px;">
+        <select id="acDay" style="flex:1;background:var(--surface);border:1.5px solid var(--green);color:var(--green);padding:8px 4px;border-radius:8px;font-family:var(--mono);font-size:14px;font-weight:700;" onchange="updateAcNext()"></select>
+        <select id="acMonth" style="flex:1;background:var(--surface);border:1.5px solid var(--green);color:var(--green);padding:8px 4px;border-radius:8px;font-family:var(--mono);font-size:14px;font-weight:700;" onchange="updateAcNext()"></select>
+        <select id="acYear" style="flex:1;background:var(--surface);border:1.5px solid var(--green);color:var(--green);padding:8px 4px;border-radius:8px;font-family:var(--mono);font-size:14px;font-weight:700;" onchange="updateAcNext()"></select>
+      </div>
+      <div id="acModalNext" style="font-size:11px;color:var(--text3);margin-top:8px;"></div>
     </div>
     <div style="display:flex;gap:10px;">
       <button onclick="closeAcModal()" style="flex:1;padding:13px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);border-radius:10px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;">ยกเลิก</button>
