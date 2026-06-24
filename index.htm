@@ -322,12 +322,11 @@ tr:last-child td{border-bottom:none;}
     <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">ข้อมูลทั่วไป</div>
     <div id="tdInfoCard" style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;overflow:hidden;margin-bottom:12px;"></div>
 
-    <!-- ที่จอดรถ -->
+    <!-- ห้องที่เช่า -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;">ที่จอดรถ</div>
-      <button id="tdVehEditBtn" onclick="toggleVehEdit()" style="background:transparent;border:none;color:var(--blue);font-size:12px;font-family:var(--font);cursor:pointer;">✏️ แก้ไข</button>
+      <div id="tdRoomsLabel" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;">ห้องที่เช่า</div>
     </div>
-    <div id="tdVehCard" style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;overflow:hidden;margin-bottom:12px;"></div>
+    <div id="tdVehCard" style="margin-bottom:12px;"></div>
 
     <!-- กราฟชำระ -->
     <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">ประวัติการชำระ 12 เดือน</div>
@@ -1267,9 +1266,18 @@ function closeTenantDetail(){
 }
 
 function findTenant(){
-  // Find by room code first (most reliable), then by tenant ID
-  return DATA.tenants.find(t=>normCode(t['ห้องเลขที่'])===normCode(currentTenantId))
-    ||DATA.tenants.find(t=>t['รหัสผู้เช่า']===currentTenantId);
+  // Find primary record by tenant ID or room code
+  return DATA.tenants.find(t=>t['รหัสผู้เช่า']===currentTenantId)
+    ||DATA.tenants.find(t=>normCode(t['ห้องเลขที่'])===normCode(currentTenantId));
+}
+
+function findTenantRooms(){
+  // Find all rooms for this tenant
+  const t=findTenant();
+  if(!t)return[];
+  const id=t['รหัสผู้เช่า'];
+  if(id)return DATA.tenants.filter(r=>r['รหัสผู้เช่า']===id);
+  return[t];
 }
 
 function renderTenantDetail(){
@@ -1496,14 +1504,19 @@ async function confirmMoveOut(){
   if(!dateVal){alert('กรุณาเลือกวันที่');return;}
   const d=new Date(dateVal);
   const dateStr=formatDateThai(d);
-  const t=findTenant();
-  if(!t)return;
-  try{
-    const idx2=DATA.tenants.indexOf(t)+1;
-    const res=await apiPost({sheet:'ผู้เช่า',action:'update_row',rowIndex:idx2,data:{'วันที่ออก':dateStr}});
-    if(res.success){t['วันที่ออก']=dateStr;closeMoveOutModal();renderTenantDetail();renderTenants2();}
-    else alert('บันทึกไม่สำเร็จ');
-  }catch(e){alert('เกิดข้อผิดพลาด: '+e.message);}
+  const rooms=findTenantRooms().filter(r=>!r['วันที่ออก']);
+  if(!rooms.length)return;
+  let ok=0;
+  for(const r of rooms){
+    try{
+      const idx2=DATA.tenants.indexOf(r)+1;
+      const res=await apiPost({sheet:'ผู้เช่า',action:'update_row',rowIndex:idx2,data:{'วันที่ออก':dateStr}});
+      if(res.success){r['วันที่ออก']=dateStr;ok++;}
+    }catch(e){}
+  }
+  closeMoveOutModal();
+  if(ok>0){renderTenantDetail();renderTenants2();}
+  else alert('บันทึกไม่สำเร็จ');
 }
 
 
@@ -1533,57 +1546,77 @@ function getPaymentDot(tenantCode){
 function renderTenants2(){
   if(!dataLoaded){document.getElementById('tenantList2').innerHTML='<div style="text-align:center;padding:30px;color:var(--text3);">ยังไม่ได้โหลดข้อมูล</div>';return;}
   const q=(document.getElementById('tenantSearch2').value||'').toLowerCase();
-  let list=tenantStatus2==='current'
-    ?DATA.tenants.filter(t=>!t['วันที่ออก'])
-    :DATA.tenants.filter(t=>!!t['วันที่ออก']);
-  if(q)list=list.filter(t=>JSON.stringify(t).toLowerCase().includes(q));
-  list=[...list].sort((a,b)=>{
-    const za=(a['ห้องเลขที่']||'').trim().toUpperCase().charAt(0);
-    const zb=(b['ห้องเลขที่']||'').trim().toUpperCase().charAt(0);
-    const order={'S':0,'A':1,'B':2};
-    if((order[za]??3)!==(order[zb]??3))return(order[za]??3)-(order[zb]??3);
-    return(a['ห้องเลขที่']||'')>(b['ห้องเลขที่']||'')?1:-1;
-  });
-  if(!list.length){document.getElementById('tenantList2').innerHTML='<div style="text-align:center;padding:30px;color:var(--text3);">ไม่พบข้อมูล</div>';return;}
-  
-  let lastZone='';
-  document.getElementById('tenantList2').innerHTML=list.map(t=>{
-    const code=t['ห้องเลขที่']||'';
-    const zone=code.trim().toUpperCase().charAt(0);
-    let zoneHdr='';
-    if(zone!==lastZone&&tenantStatus2==='current'){
-      lastZone=zone;
-      zoneHdr=`<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;padding:4px 2px;margin:8px 0 6px;">โซน ${zone}</div>`;
-    }
-    const dur=calcDur2(t['วันที่เข้าอยู่'],t['วันที่ออก']);
-    const payColor=getPaymentDot(code);
-    // Vehicles
-    const cars=t['รถยนต์ล็อก']?t['รถยนต์ล็อก'].split(',').length:0;
-    const motos=t['จักยานยนต์ล็อก']?t['จักยานยนต์ล็อก'].split(',').length:0;
-    const vehHtml=(cars?`<span style="font-size:10px;color:var(--text2);">🚗${cars}</span>`:'')+(motos?`<span style="font-size:10px;color:var(--text2);">🏍️${motos}</span>`:'');
-    
-    const isPast=!!t['วันที่ออก'];
-    // Vehicle badges
-    const cars2=(t['รถยนต์ล็อก']||'').split(',').filter(Boolean);
-    const motos2=(t['จักยานยนต์ล็อก']||'').split(',').filter(Boolean);
-    const padLock=l=>String(parseInt(l.trim())||l.trim()).padStart(2,'0');
-    const vehBadges=[
-      ...cars2.map(l=>`<span style="background:#1a2a3a;color:var(--blue);font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">${padLock(l)}</span>`),
-      ...motos2.map(l=>`<span style="background:#3a2a1a;color:var(--yellow);font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">${padLock(l)}</span>`)
-    ].join('');
+  const isCurrent=tenantStatus2==='current';
 
-    return`${zoneHdr}<div class="room-list-row${isPast?' vacant':''}" onclick="openTenantDetail('${code}')">
-      <span style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--blue);min-width:54px;">${code}</span>
+  // Group by รหัสผู้เช่า
+  const groups={};
+  DATA.tenants.forEach(t=>{
+    if(isCurrent&&t['วันที่ออก'])return;
+    if(!isCurrent&&!t['วันที่ออก'])return;
+    const id=t['รหัสผู้เช่า']||t['ห้องเลขที่'];
+    if(!groups[id])groups[id]={tenant:t,rooms:[]};
+    groups[id].rooms.push(t);
+  });
+
+  // Filter by search
+  let list=Object.values(groups).filter(g=>{
+    if(!q)return true;
+    const t=g.tenant;
+    const allRooms=g.rooms.map(r=>r['ห้องเลขที่']||'').join(' ').toLowerCase();
+    return JSON.stringify(t).toLowerCase().includes(q)||allRooms.includes(q);
+  });
+
+  // Sort by name
+  list.sort((a,b)=>(a.tenant['ชื่อ-นามสกุล']||'')>(b.tenant['ชื่อ-นามสกุล']||'')?1:-1);
+
+  if(!list.length){document.getElementById('tenantList2').innerHTML='<div style="text-align:center;padding:30px;color:var(--text3);">ไม่พบข้อมูล</div>';return;}
+
+  // Group by first character
+  let lastChar='';
+  document.getElementById('tenantList2').innerHTML=list.map(g=>{
+    const t=g.tenant;
+    const rooms=g.rooms;
+    const firstChar=(t['ชื่อ-นามสกุล']||'?').charAt(0);
+    let charHdr='';
+    if(firstChar!==lastChar){
+      lastChar=firstChar;
+      charHdr=`<div style="font-size:10px;color:var(--text3);letter-spacing:0.08em;padding:4px 2px;margin:8px 0 6px;">${firstChar}</div>`;
+    }
+
+    // Payment dot
+    const payColor=getPaymentDot(rooms[0]['ห้องเลขที่']||'');
+
+    // Duration from earliest entry
+    const dates=rooms.map(r=>r['วันที่เข้าอยู่']).filter(Boolean);
+    const earliest=dates.sort()[0];
+    const dur=calcDur2(earliest,isCurrent?null:t['วันที่ออก']);
+
+    // Room + vehicle badges
+    const roomBadges=rooms.map(r=>{
+      const code=r['ห้องเลขที่']||'';
+      const cars=(r['รถยนต์ล็อก']||'').split(',').filter(Boolean);
+      const motos=(r['จักยานยนต์ล็อก']||'').split(',').filter(Boolean);
+      const padL=l=>String(parseInt(l.trim())||l.trim()).padStart(2,'0');
+      const carBadges=cars.map(l=>`<span style="background:#1a2a3a;color:var(--blue);font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">${padL(l)}</span>`).join('');
+      const motoBadges=motos.map(l=>`<span style="background:#3a2a1a;color:var(--yellow);font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">${padL(l)}</span>`).join('');
+      return`<span style="background:#2a1a3a;color:#c084fc;font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;">${code}</span>${carBadges}${motoBadges}`;
+    });
+
+    // Insert divider between rooms
+    const badgeHtml=roomBadges.join('<span style="width:1px;height:14px;background:var(--border2);display:inline-block;margin:0 2px;vertical-align:middle;"></span>');
+
+    const id=t['รหัสผู้เช่า']||t['ห้องเลขที่'];
+    return`${charHdr}<div class="room-list-row${isCurrent?'':' vacant'}" onclick="openTenantDetail('${id}')">
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
           <span style="font-size:13px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t['ชื่อ-นามสกุล']||'—'}</span>
           ${dur?`<span style="font-size:11px;font-family:var(--mono);font-weight:600;color:var(--teal);white-space:nowrap;">${dur}</span>`:''}
-          ${isPast?`<span style="font-size:10px;color:var(--text3);white-space:nowrap;">ออก ${t['วันที่ออก']}</span>`:''}
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <div style="width:7px;height:7px;border-radius:50%;background:${payColor};flex-shrink:0;"></div>
           <span style="font-size:11px;color:var(--text2);">${t['เบอร์โทร']||'—'}</span>
-          ${vehBadges}
+          <span style="width:1px;height:14px;background:var(--border2);display:inline-block;vertical-align:middle;"></span>
+          ${badgeHtml}
         </div>
       </div>
       <span style="color:var(--border2);font-size:14px;flex-shrink:0;">›</span>
@@ -1591,8 +1624,6 @@ function renderTenants2(){
   }).join('');
 }
 
-let atCarLock='';
-let atMotoLock='';
 
 function openAddTenant(){
   atCarLock='';atMotoLock='';
