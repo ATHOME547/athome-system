@@ -1340,14 +1340,9 @@ function removeVeh(type,idx){
 
 async function saveVeh(){
   const t=findTenant();
-  const inputs=document.querySelectorAll('.veh-input');
-  const cars=[];const motos=[];
-  inputs.forEach(el=>{
-    if(el.dataset.type==='car')cars[parseInt(el.dataset.idx)]=el.value.trim();
-    else motos[parseInt(el.dataset.idx)]=el.value.trim();
-  });
-  const newCars=cars.filter(Boolean);
-  const newMotos=motos.filter(Boolean);
+  // Read directly from t since addVeh/changeLock already updated it
+  const newCars=(t['รถยนต์ล็อก']||'').split(',').filter(Boolean).map(s=>s.trim());
+  const newMotos=(t['จักยานยนต์ล็อก']||'').split(',').filter(Boolean).map(s=>s.trim());
   
   // Check duplicate within same type
   const dupCarOwn=newCars.filter((v,i)=>newCars.indexOf(v)!==i);
