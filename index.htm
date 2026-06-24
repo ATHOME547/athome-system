@@ -1304,12 +1304,17 @@ function showAcModal(code,lastDate){
 function updateAcNext(){
   const val=document.getElementById('acModalDateInput').value;
   if(!val){document.getElementById('acModalNext').textContent='';return;}
-  const d=new Date(val);
-  const next=new Date(d.getFullYear(),d.getMonth()+6,d.getDate());
-  // แสดงวันที่ที่เลือกเป็น พ.ศ.
+  // val is YYYY-MM-DD in CE
+  const parts=val.split('-');
+  const ceYear=parseInt(parts[0]);
+  const mo=parseInt(parts[1]);
+  const day=parseInt(parts[2]);
+  const d=new Date(ceYear,mo-1,day);
+  const next=new Date(ceYear,mo-1+6,day);
+  // formatDateThai converts CE to BE correctly
   const selStr=formatDateThai(d);
   const nextStr=formatDateThai(next);
-  document.getElementById('acModalNext').textContent='วันที่เลือก '+selStr+' · ครั้งถัดไป '+nextStr;
+  document.getElementById('acModalNext').textContent='ครั้งถัดไป '+nextStr;
 }
 function closeAcModal(){document.getElementById('acModal').style.display='none';}
 async function confirmAcClean(){
