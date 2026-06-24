@@ -444,6 +444,31 @@ tr:last-child td{border-bottom:none;}
   <div class="nav-item" data-page="settings" onclick="showPage('settings')"><span class="nav-icon">⚙️</span><span class="nav-label">อัตรา</span></div>
 </nav>
 
+<!-- AC CONFIRM MODAL -->
+<div id="acModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:flex-end;">
+  <div style="background:var(--surface);border-radius:16px 16px 0 0;border-top:1px solid var(--border2);padding:20px;width:100%;box-sizing:border-box;">
+    <div style="display:flex;justify-content:center;margin-bottom:12px;"><div style="width:36px;height:4px;background:var(--border2);border-radius:2px;"></div></div>
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:32px;margin-bottom:8px;">❄️</div>
+      <div style="font-size:16px;font-weight:700;">ยืนยันการล้างแอร์</div>
+      <div id="acModalRoom" style="font-size:13px;color:var(--text2);margin-top:4px;"></div>
+    </div>
+    <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;margin-bottom:16px;">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">บันทึกวันที่ (พ.ศ.)</div>
+      <div style="display:flex;gap:6px;">
+        <select id="acDay" style="flex:1;background:var(--surface);border:1.5px solid var(--green);color:var(--green);padding:8px 4px;border-radius:8px;font-family:var(--mono);font-size:14px;font-weight:700;" onchange="updateAcNext()"></select>
+        <select id="acMonth" style="flex:1;background:var(--surface);border:1.5px solid var(--green);color:var(--green);padding:8px 4px;border-radius:8px;font-family:var(--mono);font-size:14px;font-weight:700;" onchange="updateAcNext()"></select>
+        <select id="acYear" style="flex:1;background:var(--surface);border:1.5px solid var(--green);color:var(--green);padding:8px 4px;border-radius:8px;font-family:var(--mono);font-size:14px;font-weight:700;" onchange="updateAcNext()"></select>
+      </div>
+      <div id="acModalNext" style="font-size:11px;color:var(--text3);margin-top:8px;"></div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeAcModal()" style="flex:1;padding:13px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);border-radius:10px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;">ยกเลิก</button>
+      <button onclick="confirmAcClean()" style="flex:2;padding:13px;background:var(--green);color:#000;border:none;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;">✓ ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SHEET_ID='1K7z_OzHJDfi0__9-gfdFQkXRVAo_zmFi9MQIl6MtU8A';
 const BASE=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=`;
@@ -647,8 +672,8 @@ function renderMeterChart(){
   mkLine('meterHistoryChart',rows.map(r=>r['เดือน/ปี']||r[Object.keys(r)[0]]),rows.map(r=>parseFloat(r[col]||0)),label,color);
 }
 function renderRooms(){
-  if(!dataLoaded){document.getElementById('roomGrid').innerHTML='<div class="empty">ยังไม่ได้โหลดข้อมูล</div>';return;}
-  document.getElementById('roomGrid').innerHTML=DATA.rooms.map(r=>{const t=DATA.tenants.find(x=>x['ห้องเลขที่']===r['ห้องเลขที่']&&!x['วันที่ออก']);return`<div class="room-card"><div class="room-number">${r['ห้องเลขที่']||''}</div><div class="room-type">${r['ประเภท']||''} · ${r['อาคาร']||''}</div><div class="room-rent">฿${fmt(r['ค่าเช่า'])}</div><div class="room-tenant">${t?`👤 ${t['ชื่อ-นามสกุล']}`:'<span style="color:var(--text3)">ว่าง</span>'}</div></div>`;}).join('');
+  if(!dataLoaded){document.getElementById('roomGrid2')||{innerHTML:''}.innerHTML='<div class="empty">ยังไม่ได้โหลดข้อมูล</div>';return;}
+  document.getElementById('roomGrid2')||{innerHTML:''}.innerHTML=DATA.rooms.map(r=>{const t=DATA.tenants.find(x=>x['ห้องเลขที่']===r['ห้องเลขที่']&&!x['วันที่ออก']);return`<div class="room-card"><div class="room-number">${r['ห้องเลขที่']||''}</div><div class="room-type">${r['ประเภท']||''} · ${r['อาคาร']||''}</div><div class="room-rent">฿${fmt(r['ค่าเช่า'])}</div><div class="room-tenant">${t?`👤 ${t['ชื่อ-นามสกุล']}`:'<span style="color:var(--text3)">ว่าง</span>'}</div></div>`;}).join('');
 }
 
 async function togglePayment(rowIndex, newStatus){
@@ -1435,29 +1460,5 @@ function renderRooms2(){
 
 loadData();
 </script>
-<!-- AC CONFIRM MODAL -->
-<div id="acModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:flex-end;">
-  <div style="background:var(--surface);border-radius:16px 16px 0 0;border-top:1px solid var(--border2);padding:20px;width:100%;box-sizing:border-box;">
-    <div style="display:flex;justify-content:center;margin-bottom:12px;"><div style="width:36px;height:4px;background:var(--border2);border-radius:2px;"></div></div>
-    <div style="text-align:center;margin-bottom:16px;">
-      <div style="font-size:32px;margin-bottom:8px;">❄️</div>
-      <div style="font-size:16px;font-weight:700;">ยืนยันการล้างแอร์</div>
-      <div id="acModalRoom" style="font-size:13px;color:var(--text2);margin-top:4px;"></div>
-    </div>
-    <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;margin-bottom:16px;">
-      <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">บันทึกวันที่ (พ.ศ.)</div>
-      <div style="display:flex;gap:6px;">
-        <select id="acDay" style="flex:1;background:var(--surface);border:1.5px solid var(--green);color:var(--green);padding:8px 4px;border-radius:8px;font-family:var(--mono);font-size:14px;font-weight:700;" onchange="updateAcNext()"></select>
-        <select id="acMonth" style="flex:1;background:var(--surface);border:1.5px solid var(--green);color:var(--green);padding:8px 4px;border-radius:8px;font-family:var(--mono);font-size:14px;font-weight:700;" onchange="updateAcNext()"></select>
-        <select id="acYear" style="flex:1;background:var(--surface);border:1.5px solid var(--green);color:var(--green);padding:8px 4px;border-radius:8px;font-family:var(--mono);font-size:14px;font-weight:700;" onchange="updateAcNext()"></select>
-      </div>
-      <div id="acModalNext" style="font-size:11px;color:var(--text3);margin-top:8px;"></div>
-    </div>
-    <div style="display:flex;gap:10px;">
-      <button onclick="closeAcModal()" style="flex:1;padding:13px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);border-radius:10px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;">ยกเลิก</button>
-      <button onclick="confirmAcClean()" style="flex:2;padding:13px;background:var(--green);color:#000;border:none;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;">✓ ยืนยัน</button>
-    </div>
-  </div>
-</div>
-</body>
+
 </html>
