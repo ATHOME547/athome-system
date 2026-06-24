@@ -1930,14 +1930,21 @@ function renderTenants2(){
   const q=(document.getElementById('tenantSearch2').value||'').toLowerCase();
   const isCurrent=tenantStatus2==='current';
 
-  // Group by รหัสผู้เช่า
-  const groups={};
+  // Group by รหัสผู้เช่า - group ALL records first
+  const allGroups={};
   DATA.tenants.forEach(t=>{
-    if(isCurrent&&t['วันที่ออก'])return;
-    if(!isCurrent&&!t['วันที่ออก'])return;
     const id=t['รหัสผู้เช่า']||t['ห้องเลขที่'];
-    if(!groups[id])groups[id]={tenant:t,rooms:[]};
-    groups[id].rooms.push(t);
+    if(!allGroups[id])allGroups[id]={tenant:t,rooms:[]};
+    allGroups[id].rooms.push(t);
+    // Use active record as primary tenant if available
+    if(!t['วันที่ออก'])allGroups[id].tenant=t;
+  });
+  // Filter by current/past: current = has at least 1 active room, past = all rooms out
+  const groups={};
+  Object.entries(allGroups).forEach(([id,g])=>{
+    const hasActive=g.rooms.some(r=>!r['วันที่ออก']);
+    if(isCurrent&&hasActive)groups[id]=g;
+    if(!isCurrent&&!hasActive)groups[id]=g;
   });
 
   // Filter by search
