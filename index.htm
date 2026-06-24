@@ -319,12 +319,16 @@ tr:last-child td{border-bottom:none;}
     </div>
 
     <!-- ข้อมูลทั่วไป -->
-    <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">ข้อมูลทั่วไป</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;">ข้อมูลทั่วไป</div>
+      <button onclick="openEditTenantInfo()" style="background:transparent;border:none;color:var(--blue);font-size:12px;font-family:var(--font);cursor:pointer;">✏️ แก้ไข</button>
+    </div>
     <div id="tdInfoCard" style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;overflow:hidden;margin-bottom:12px;"></div>
 
     <!-- ห้องที่เช่า -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
       <div id="tdRoomsLabel" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;">ห้องที่เช่า</div>
+      <button onclick="openEditTenantRooms()" style="background:transparent;border:none;color:var(--blue);font-size:12px;font-family:var(--font);cursor:pointer;">✏️ แก้ไข</button>
     </div>
     <div id="tdVehCard" style="margin-bottom:12px;"></div>
 
@@ -374,7 +378,7 @@ tr:last-child td{border-bottom:none;}
       <button onclick="openAddTenant()" style="background:var(--green);color:#000;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;">+ เพิ่มผู้เช่า</button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:10px;">
-      <button class="zone-btn-small active" id="tStatusBtn-current" onclick="setTenantStatus2('current')" style="flex:1;font-size:12px;">ปัจจุบัน</button>
+      <button class="zone-btn-small active" id="tStatusBtn-current" data-zone="ALL" onclick="setTenantStatus2('current')" style="flex:1;font-size:12px;">ปัจจุบัน</button>
       <button class="zone-btn-small" id="tStatusBtn-past" onclick="setTenantStatus2('past')" style="flex:1;font-size:12px;">เคยอยู่</button>
     </div>
     <input class="search-box" id="tenantSearch2" placeholder="🔍 ค้นหาชื่อ / ห้อง / เบอร์..." oninput="renderTenants2()" style="margin-bottom:10px;">
@@ -1249,6 +1253,128 @@ function mkBarChart(id,labels,data,color){
 }
 
 
+/* ===== TENANT EDIT ===== */
+function openEditTenantInfo(){
+  const t=findTenant();
+  if(!t)return;
+  const modal=document.createElement('div');
+  modal.id='editInfoModal';
+  modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1003;display:flex;align-items:flex-end;';
+  modal.innerHTML=`<div style="background:var(--surface);border-radius:16px 16px 0 0;border-top:1px solid var(--border2);padding:20px;width:100%;box-sizing:border-box;max-height:80vh;overflow-y:auto;">
+    <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 14px;"></div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:14px;">✏️ แก้ไขข้อมูลผู้เช่า</div>
+    ${[
+      ['ชื่อ-นามสกุล','ei_name',t['ชื่อ-นามสกุล']||'','text'],
+      ['เบอร์โทร','ei_phone',t['เบอร์โทร']||'','tel'],
+      ['เงินมัดจำ','ei_deposit',t['เงินมัดจำ']||'','number'],
+      ['หมายเหตุ','ei_note',t['หมายเหตุ']||'','text'],
+    ].map(([l,id,v,type])=>`<div style="margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:5px;">${l}</div>
+      <input id="${id}" type="${type}" value="${v}" style="width:100%;background:var(--surface2);border:1.5px solid var(--border2);color:var(--text);padding:10px 12px;border-radius:8px;font-family:var(--font);font-size:14px;box-sizing:border-box;" placeholder="${l}">
+    </div>`).join('')}
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button onclick="document.getElementById('editInfoModal').remove()" style="flex:1;padding:13px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);border-radius:10px;font-family:var(--font);font-size:14px;cursor:pointer;">ยกเลิก</button>
+      <button onclick="saveEditTenantInfo()" style="flex:2;padding:13px;background:var(--green);color:#000;border:none;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;">💾 บันทึก</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveEditTenantInfo(){
+  const t=findTenant();
+  if(!t)return;
+  const name=document.getElementById('ei_name').value.trim();
+  const phone=document.getElementById('ei_phone').value.trim();
+  const deposit=document.getElementById('ei_deposit').value.trim();
+  const note=document.getElementById('ei_note').value.trim();
+  if(!name){alert('กรุณากรอกชื่อ');return;}
+  const rooms=findTenantRooms();
+  try{
+    for(const r of rooms){
+      const idx2=DATA.tenants.indexOf(r)+1;
+      const res=await apiPost({sheet:'ผู้เช่า',action:'update_row',rowIndex:idx2,data:{
+        'ชื่อ-นามสกุล':name,'เบอร์โทร':phone,'เงินมัดจำ':deposit,'หมายเหตุ':note
+      }});
+      if(res.success){r['ชื่อ-นามสกุล']=name;r['เบอร์โทร']=phone;r['เงินมัดจำ']=deposit;r['หมายเหตุ']=note;}
+    }
+    document.getElementById('editInfoModal').remove();
+    renderTenantDetail();renderTenants2();
+  }catch(e){alert('เกิดข้อผิดพลาด: '+e.message);}
+}
+
+function openEditTenantRooms(){
+  const rooms=findTenantRooms();
+  const modal=document.createElement('div');
+  modal.id='editRoomsModal';
+  modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1003;display:flex;align-items:flex-end;';
+  const roomsHtml=rooms.map((r,ri)=>{
+    const cars=(r['รถยนต์ล็อก']||'').split(',').filter(Boolean);
+    const motos=(r['จักยานยนต์ล็อก']||'').split(',').filter(Boolean);
+    const padL=l=>String(parseInt(l.trim())||l.trim()).padStart(2,'0');
+    const carBadges=cars.map((l,ci)=>`<span onclick="editRoomPickLock('car',${ri},${ci},'${padL(l)}')" style="background:#1a2a3a;color:var(--blue);font-family:var(--mono);font-size:12px;font-weight:700;padding:3px 10px;border-radius:5px;cursor:pointer;">${padL(l)} ✏️</span>`).join('');
+    const motoBadges=motos.map((l,mi)=>`<span onclick="editRoomPickLock('moto',${ri},${mi},'${padL(l)}')" style="background:#3a2a1a;color:var(--yellow);font-family:var(--mono);font-size:12px;font-weight:700;padding:3px 10px;border-radius:5px;cursor:pointer;">${padL(l)} ✏️</span>`).join('');
+    return`<div style="background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="background:#2a1a3a;color:#c084fc;font-family:var(--mono);font-size:13px;font-weight:700;padding:3px 10px;border-radius:6px;">${r['ห้องเลขที่']||'—'}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+        <span style="font-size:11px;color:var(--text2);width:44px;">🚗 รถ</span>
+        ${carBadges}
+        <span onclick="editRoomAddLock('car',${ri})" style="background:var(--surface);color:var(--blue);border:1px dashed var(--border2);font-size:11px;padding:3px 8px;border-radius:5px;cursor:pointer;">+ เพิ่ม</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:var(--text2);width:44px;">🏍️ มอ</span>
+        ${motoBadges}
+        <span onclick="editRoomAddLock('moto',${ri})" style="background:var(--surface);color:var(--yellow);border:1px dashed var(--border2);font-size:11px;padding:3px 8px;border-radius:5px;cursor:pointer;">+ เพิ่ม</span>
+      </div>
+    </div>`;
+  }).join('');
+  modal.innerHTML=`<div style="background:var(--surface);border-radius:16px 16px 0 0;border-top:1px solid var(--border2);padding:20px;width:100%;box-sizing:border-box;max-height:80vh;overflow-y:auto;">
+    <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 14px;"></div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:14px;">✏️ แก้ไขห้องและล็อกรถ</div>
+    ${roomsHtml}
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button onclick="document.getElementById('editRoomsModal').remove()" style="flex:1;padding:13px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);border-radius:10px;font-family:var(--font);font-size:14px;cursor:pointer;">ปิด</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+function editRoomPickLock(type,roomIdx,lockIdx,current){
+  const rooms=findTenantRooms();
+  const r=rooms[roomIdx];
+  showParkingPicker(type,current,async function(slot){
+    const key=type==='car'?'รถยนต์ล็อก':'จักยานยนต์ล็อก';
+    const arr=(r[key]||'').split(',').filter(Boolean);
+    arr[lockIdx]=slot;
+    r[key]=arr.join(',');
+    try{
+      const idx2=DATA.tenants.indexOf(r)+1;
+      await apiPost({sheet:'ผู้เช่า',action:'update_row',rowIndex:idx2,data:{[key]:r[key]}});
+    }catch(e){}
+    document.getElementById('editRoomsModal').remove();
+    openEditTenantRooms();
+    renderTenantDetail();
+  });
+}
+
+function editRoomAddLock(type,roomIdx){
+  const rooms=findTenantRooms();
+  const r=rooms[roomIdx];
+  showParkingPicker(type,null,async function(slot){
+    const key=type==='car'?'รถยนต์ล็อก':'จักยานยนต์ล็อก';
+    r[key]=(r[key]?r[key]+',':'')+slot;
+    try{
+      const idx2=DATA.tenants.indexOf(r)+1;
+      await apiPost({sheet:'ผู้เช่า',action:'update_row',rowIndex:idx2,data:{[key]:r[key]}});
+    }catch(e){}
+    document.getElementById('editRoomsModal').remove();
+    openEditTenantRooms();
+    renderTenantDetail();
+  });
+}
+
+
 /* ===== TENANT DETAIL ===== */
 let currentTenantId='';
 let vehEditMode=false;
@@ -1526,7 +1652,9 @@ let tenantStatus2='current';
 function setTenantStatus2(s){
   tenantStatus2=s;
   document.querySelectorAll('[id^="tStatusBtn-"]').forEach(b=>{
-    b.classList.toggle('active', b.id==='tStatusBtn-'+s);
+    const isActive=b.id==='tStatusBtn-'+s;
+    b.classList.toggle('active',isActive);
+    b.dataset.zone=isActive?'ALL':'';
   });
   renderTenants2();
 }
@@ -1612,10 +1740,10 @@ function renderTenants2(){
           <span style="font-size:13px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t['ชื่อ-นามสกุล']||'—'}</span>
           ${dur?`<span style="font-size:11px;font-family:var(--mono);font-weight:600;color:var(--teal);white-space:nowrap;">${dur}</span>`:''}
         </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
           <div style="width:7px;height:7px;border-radius:50%;background:${payColor};flex-shrink:0;"></div>
           <span style="font-size:11px;color:var(--text2);">${t['เบอร์โทร']||'—'}</span>
-          <span style="width:1px;height:14px;background:var(--border2);display:inline-block;vertical-align:middle;"></span>
+          <span style="width:1px;height:12px;background:var(--border2);display:inline-block;flex-shrink:0;"></span>
           ${badgeHtml}
         </div>
       </div>
