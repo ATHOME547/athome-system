@@ -634,16 +634,11 @@ function filterByMonth(){if(dataLoaded){renderBillsTable();}}
 
 /* ---- FETCH DATA ---- */
 async function fetchSheet(name){
-  const res=await fetch(BASE+encodeURIComponent(name));
-  const text=await res.text();
-  const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-  const cols=json.table.cols.map(c=>c.label);
-  return(json.table.rows||[]).map(r=>Object.fromEntries(cols.map((c,i)=>{
-    const cell=r.c[i];
-    if(!cell||cell.v===null||cell.v===undefined)return[c,''];
-    const val=cell.f||cell.v;
-    return[c,String(val)];
-  }))).filter(r=>Object.values(r).some(v=>v!==''));
+  // ใช้ Apps Script แทน gviz เพื่อให้ได้ข้อมูลครบทุกคอลัมน์
+  const res=await fetch(API_URL+'?sheet='+encodeURIComponent(name)+'&action=get');
+  const json=await res.json();
+  if(json.error)throw new Error(json.error);
+  return json.rows||[];
 }
 
 async function loadData(){
