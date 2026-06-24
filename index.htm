@@ -1438,7 +1438,7 @@ function renderTenantDetail(){
   const pastRooms=rooms.filter(r=>!!r['วันที่ออก']);
   const padLock=l=>String(parseInt((l||'').trim())||(l||'').trim()).padStart(2,'0');
 
-  const roomCardHtml=rooms.map((r,ri)=>{
+  const roomCardHtml=rooms.filter(r=>!r['วันที่ออก']).map((r,ri)=>{
     const roomInfo=DATA.rooms.find(x=>normCode(x['ห้องเลขที่'])===normCode(r['ห้องเลขที่']||''));
     const rent=roomInfo?roomInfo['ค่าเช่า']:'—';
     const type=roomInfo?roomInfo['ประเภท']:'—';
