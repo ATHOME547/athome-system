@@ -1400,7 +1400,7 @@ function renderRooms2(){
 
     // AC warning based on ล้างแอร์ล่าสุด field
     let acBorder='';let acSub='';
-    if(isAir){
+    if(isAir){console.log('AC check',code,r['ล้างแอร์ล่าสุด']);
       const acDate=r['ล้างแอร์ล่าสุด']||'';
       if(acDate){
         const d=parseDateThai(acDate);
