@@ -153,6 +153,11 @@ tr:last-child td{border-bottom:none;}
   .tenant-list{display:grid;grid-template-columns:repeat(2,1fr);}
   .room-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));}
 }
+.room-list-row{background:var(--surface);border-radius:10px;padding:11px 14px;margin-bottom:6px;border:1px solid var(--border2);cursor:pointer;display:flex;align-items:center;gap:12px;}
+.room-list-row:active{opacity:0.8;}
+.room-list-row.vacant{opacity:0.5;}
+.room-list-row.warn-ac{border-color:var(--yellow);}
+.room-list-row.danger-ac{border-color:var(--red);}
 </style>
 </head>
 <body>
@@ -900,11 +905,6 @@ function changeMonth(delta){
 }
 
 
-.room-list-row{background:var(--surface);border-radius:10px;padding:11px 14px;margin-bottom:6px;border:1px solid var(--border2);cursor:pointer;display:flex;align-items:center;gap:12px;}
-.room-list-row:active{opacity:0.8;}
-.room-list-row.vacant{opacity:0.5;}
-.room-list-row.warn-ac{border-color:var(--yellow);}
-.room-list-row.danger-ac{border-color:var(--red);}
 /* ===== DASHBOARD V2 ===== */
 const THAI_MONTHS_DASH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 let dashView='month';
