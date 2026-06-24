@@ -1305,8 +1305,10 @@ function toggleVehEdit(){vehEditMode=true;renderVehCard(findTenant());}
 function cancelVehEdit(){vehEditMode=false;renderVehCard(findTenant());}
 
 function addVeh(type){
-  showParkingPicker(type, null, (slot)=>{
-    const t=findTenant();
+  const t=findTenant();
+  if(!t){alert('ไม่พบข้อมูลผู้เช่า');return;}
+  const currentSlot=null;
+  showParkingPicker(type, currentSlot, function(slot){
     const key=type==='car'?'รถยนต์ล็อก':'จักยานยนต์ล็อก';
     t[key]=(t[key]?t[key]+',':'')+slot;
     vehEditMode=true;
@@ -1315,7 +1317,15 @@ function addVeh(type){
 }
 
 function openParkPicker(type,idx,currentSlot){
-  showParkingPicker(type,currentSlot,function(slot){changeLock(type,idx,slot);});
+  const t=findTenant();
+  if(!t){alert('ไม่พบข้อมูลผู้เช่า');return;}
+  showParkingPicker(type,currentSlot,function(slot){
+    const key=type==='car'?'รถยนต์ล็อก':'จักยานยนต์ล็อก';
+    const arr=(t[key]||'').split(',').filter(Boolean);
+    arr[idx]=slot;
+    t[key]=arr.join(',');
+    renderVehCard(t);
+  });
 }
 function changeLock(type,idx,newSlot){
   const t=findTenant();
@@ -1373,7 +1383,20 @@ async function saveVeh(){
   try{
     const idx2=DATA.tenants.indexOf(t)+1;
     const res=await apiPost({sheet:'ผู้เช่า',action:'update_row',rowIndex:idx2,data:{'รถยนต์ล็อก':t['รถยนต์ล็อก'],'จักยานยนต์ล็อก':t['จักยานยนต์ล็อก']}});
-    if(res.success){vehEditMode=false;renderVehCard(t);}
+    if(res.success){
+      // Update memory with saved values
+      t['รถยนต์ล็อก']=newCars.join(',');
+      t['จักยานยนต์ล็อก']=newMotos.join(',');
+      vehEditMode=false;
+      renderVehCard(t);
+      renderTenants2();
+      // Show success
+      const toast=document.createElement('div');
+      toast.textContent='✅ บันทึกสำเร็จ';
+      toast.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;z-index:9999;';
+      document.body.appendChild(toast);
+      setTimeout(()=>toast.remove(),2000);
+    }
     else alert('บันทึกไม่สำเร็จ');
   }catch(e){alert('เกิดข้อผิดพลาด: '+e.message);}
 }
@@ -1892,7 +1915,8 @@ function showParkingPicker(type,currentSlot,callback){
 }
 
 function selectParkSlot(slot){
-  showParkingPicker(parkingType,slot,parkingCallback);
+  const cb=parkingCallback;
+  showParkingPicker(parkingType,slot,cb);
 }
 
 function updateParkingBtn(){
