@@ -172,7 +172,7 @@ tr:last-child td{border-bottom:none;}
     </div>
   </div>
   <div class="header-actions">
-    <button class="refresh-btn" onclick="loadData().then(()=>{renderRooms2();renderTenants2();renderDashboard();});">↻</button>
+    <button class="refresh-btn" onclick="doRefresh()">↻</button>
   </div>
 </header>
 
@@ -691,6 +691,13 @@ async function fetchSheet(name){
   const json=await res.json();
   if(json.error)throw new Error(json.error);
   return json.rows||[];
+}
+
+function doRefresh(){
+  const btn=document.querySelector('.refresh-btn');
+  if(btn){btn.style.transform='rotate(360deg)';btn.style.transition='transform 0.5s';}
+  loadData();
+  setTimeout(()=>{if(btn)btn.style.transform='';},500);
 }
 
 async function loadData(){
@@ -1424,12 +1431,11 @@ function renderTenantDetail(){
   // Info card
   const rent=room?room['ค่าเช่า']:'—';
   document.getElementById('tdInfoCard').innerHTML=[
-    ['ห้อง',`<span style="font-family:var(--mono);color:var(--blue);font-weight:700;">${t['ห้องเลขที่']||'—'}</span>`],
     ['เบอร์โทร',t['เบอร์โทร']||'—'],
     ['วันเข้าอยู่',t['วันที่เข้าอยู่']||'—'],
     ['ระยะเวลา',`<span style="color:var(--green);font-weight:600;">${dur}</span>`],
     ['เงินมัดจำ',`<span style="font-family:var(--mono);color:var(--yellow);">฿${t['มัดจำ']||t['เงินมัดจำ']||'—'}</span>`],
-    ['ค่าเช่า',`<span style="font-family:var(--mono);">฿${rent}/เดือน</span>`],
+
     isPast?['วันออก',`<span style="color:var(--red);">${t['วันที่ออก']}</span>`]:null,
   ].filter(Boolean).map(([l,v])=>`<div style="display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--surface2);gap:10px;"><span style="font-size:12px;color:var(--text2);width:90px;flex-shrink:0;">${l}</span><span style="font-size:13px;font-weight:500;flex:1;">${v}</span></div>`).join('').replace(/border-bottom[^;]+;(?=[^<]*<\/div>\s*$)/,'');
 
@@ -2024,16 +2030,18 @@ function closeAddTenant(){
 }
 
 function atPickParking(type){
-  const current=type==='car'?atCarLock:atMotoLock;
-  showParkingPicker(type,current||null,function(slot){
+  const currentStr=type==='car'?atCarLock:atMotoLock;
+  const currentLocks=currentStr?currentStr.split(',').filter(Boolean).map(l=>String(parseInt(l.trim())||l.trim()).padStart(2,'0')):[];
+  showMultiParkingPicker(type,currentLocks,function(selectedLocks){
+    const val=selectedLocks.join(',');
     if(type==='car'){
-      atCarLock=slot;
+      atCarLock=val;
       const el=document.getElementById('at_car_display');
-      if(el)el.textContent=slot;
+      if(el)el.textContent=selectedLocks.length>0?selectedLocks.join(', '):'—';
     }else{
-      atMotoLock=slot;
+      atMotoLock=val;
       const el=document.getElementById('at_moto_display');
-      if(el)el.textContent=slot;
+      if(el)el.textContent=selectedLocks.length>0?selectedLocks.join(', '):'—';
     }
   });
 }
