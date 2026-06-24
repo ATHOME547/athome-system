@@ -1347,23 +1347,23 @@ async function saveVeh(){
   const newCars=cars.filter(Boolean);
   const newMotos=motos.filter(Boolean);
   
-  // Check duplicate within same tenant
-  const allNew=[...newCars,...newMotos];
-  const dupsOwn=allNew.filter((v,i)=>allNew.indexOf(v)!==i);
-  if(dupsOwn.length){alert('มีเลขล็อกซ้ำกัน: '+[...new Set(dupsOwn)].join(', '));return;}
+  // Check duplicate within same type
+  const dupCarOwn=newCars.filter((v,i)=>newCars.indexOf(v)!==i);
+  const dupMotoOwn=newMotos.filter((v,i)=>newMotos.indexOf(v)!==i);
+  if(dupCarOwn.length){alert('เลขล็อกรถยนต์ซ้ำกัน: '+[...new Set(dupCarOwn)].join(', '));return;}
+  if(dupMotoOwn.length){alert('เลขล็อกมอเตอร์ซ้ำกัน: '+[...new Set(dupMotoOwn)].join(', '));return;}
   
-  // Check duplicate with other tenants
+  // Check duplicate with other tenants (car vs car, moto vs moto only)
   const dupsWith=[];
   DATA.tenants.forEach(other=>{
     if(other===t||other['วันที่ออก'])return;
-    const otherLocks=[
-      ...(other['รถยนต์ล็อก']||'').split(',').filter(Boolean),
-      ...(other['มอเตอร์ล็อก']||'').split(',').filter(Boolean)
-    ].map(x=>x.trim());
-    allNew.forEach(lock=>{
-      if(otherLocks.includes(lock)){
-        dupsWith.push(`ล็อก ${lock} (${other['ห้องเลขที่']} - ${other['ชื่อ-นามสกุล']})`);
-      }
+    const otherCars=(other['รถยนต์ล็อก']||'').split(',').filter(Boolean).map(x=>x.trim());
+    const otherMotos=(other['มอเตอร์ล็อก']||'').split(',').filter(Boolean).map(x=>x.trim());
+    newCars.forEach(lock=>{
+      if(otherCars.includes(lock))dupsWith.push('รถยนต์ ล็อก '+lock+' ('+other['ห้องเลขที่']+' - '+other['ชื่อ-นามสกุล']+')');
+    });
+    newMotos.forEach(lock=>{
+      if(otherMotos.includes(lock))dupsWith.push('มอเตอร์ ล็อก '+lock+' ('+other['ห้องเลขที่']+' - '+other['ชื่อ-นามสกุล']+')');
     });
   });
   if(dupsWith.length){
