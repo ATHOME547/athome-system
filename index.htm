@@ -672,8 +672,8 @@ function renderMeterChart(){
   mkLine('meterHistoryChart',rows.map(r=>r['เดือน/ปี']||r[Object.keys(r)[0]]),rows.map(r=>parseFloat(r[col]||0)),label,color);
 }
 function renderRooms(){
-  if(!dataLoaded){document.getElementById('roomGrid2')||{innerHTML:''}.innerHTML='<div class="empty">ยังไม่ได้โหลดข้อมูล</div>';return;}
-  document.getElementById('roomGrid2')||{innerHTML:''}.innerHTML=DATA.rooms.map(r=>{const t=DATA.tenants.find(x=>x['ห้องเลขที่']===r['ห้องเลขที่']&&!x['วันที่ออก']);return`<div class="room-card"><div class="room-number">${r['ห้องเลขที่']||''}</div><div class="room-type">${r['ประเภท']||''} · ${r['อาคาร']||''}</div><div class="room-rent">฿${fmt(r['ค่าเช่า'])}</div><div class="room-tenant">${t?`👤 ${t['ชื่อ-นามสกุล']}`:'<span style="color:var(--text3)">ว่าง</span>'}</div></div>`;}).join('');
+  // old renderRooms - replaced by renderRooms2
+  return;
 }
 
 async function togglePayment(rowIndex, newStatus){
