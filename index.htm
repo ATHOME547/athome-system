@@ -273,6 +273,7 @@ tr:last-child td{border-bottom:none;}
           <span id="meterProgress" style="font-size:11px;color:var(--text2);font-family:var(--mono);font-weight:600;white-space:nowrap;">0/0</span>
         </div>
         <div class="zone-btn-row" id="meterZoneBtns">
+          <div class="zone-btn-small" data-zone="ALL" onclick="setMeterZone('ALL')" style="font-size:11px;">ทั้งหมด</div>
           <div class="zone-btn-small active" data-zone="S" onclick="setMeterZone('S')">S</div>
           <div class="zone-btn-small" data-zone="A" onclick="setMeterZone('A')">A</div>
           <div class="zone-btn-small" data-zone="B" onclick="setMeterZone('B')">B</div>
@@ -695,6 +696,7 @@ function renderMeterEntry(){
   if(!dataLoaded){document.getElementById('meterEntryRows').innerHTML='<div class="empty" style="padding:20px;">ยังไม่ได้โหลดข้อมูล</div>';return;}
   const z=METER_STATE.zone.toUpperCase();
   const rooms=DATA.rooms.filter(r=>{
+    if(z==='ALL')return true;
     const bldg=String(r['อาคาร']||'').trim().toUpperCase();
     const code=String(r['ห้องเลขที่']||'').trim().toUpperCase();
     return bldg===z||code.startsWith(z);
