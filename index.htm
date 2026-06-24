@@ -1845,8 +1845,13 @@ function getUsedSlots(type){
 }
 
 function getTotalSlots(type){
-  const rates=getRates();
-  return type==='car'?parseInt(rates.r_car_slots||14):parseInt(rates.r_moto_slots||41);
+  try{
+    const stored=localStorage.getItem('athome_rates');
+    const rates=stored?JSON.parse(stored):RATE_DEFAULTS;
+    return type==='car'?parseInt(rates.r_car_slots||14):parseInt(rates.r_moto_slots||41);
+  }catch{
+    return type==='car'?14:41;
+  }
 }
 
 function showParkingPicker(type,currentSlot,callback){
