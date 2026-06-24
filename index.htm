@@ -1267,14 +1267,21 @@ function calcDur2(dateStr){
 
 function parseDateThai(s){
   if(!s)return null;
-  try{const p=s.split('/');if(p.length!==3)return null;let[d,mo,y]=p;if(parseInt(y)>2500)y=parseInt(y)-543;return new Date(y,mo-1,d);}catch{return null;}
+  try{
+    const p=s.split('/');if(p.length!==3)return null;
+    let[d,mo,y]=p;
+    y=parseInt(y);mo=parseInt(mo);d=parseInt(d);
+    if(y>2500)y=y-543; // แปลง พ.ศ. → ค.ศ.
+    return new Date(y,mo-1,d);
+  }catch{return null;}
 }
 
 function formatDateThai(d){
   if(!d)return'—';
   const m=String(d.getMonth()+1).padStart(2,'0');
   const day=String(d.getDate()).padStart(2,'0');
-  return day+'/'+m+'/'+(d.getFullYear()+543);
+  const y=d.getFullYear()<2500?d.getFullYear()+543:d.getFullYear();
+  return day+'/'+m+'/'+y;
 }
 
 /* AC MODAL */
@@ -1282,12 +1289,14 @@ let acModalRoom='';
 function showAcModal(code,lastDate){
   acModalRoom=code;
   const today=new Date();
-  // Set input to today in YYYY-MM-DD format
   const yyyy=today.getFullYear();
   const mm=String(today.getMonth()+1).padStart(2,'0');
   const dd=String(today.getDate()).padStart(2,'0');
   document.getElementById('acModalRoom').textContent='ห้อง '+code;
   document.getElementById('acModalDateInput').value=`${yyyy}-${mm}-${dd}`;
+  // Show Thai year label
+  const thaiYear=yyyy+543;
+  document.getElementById('acModalDateInput').setAttribute('data-thai-year',thaiYear);
   updateAcNext();
   document.getElementById('acModal').style.display='flex';
 }
@@ -1297,7 +1306,10 @@ function updateAcNext(){
   if(!val){document.getElementById('acModalNext').textContent='';return;}
   const d=new Date(val);
   const next=new Date(d.getFullYear(),d.getMonth()+6,d.getDate());
-  document.getElementById('acModalNext').textContent='ครั้งถัดไป '+formatDateThai(next);
+  // แสดงวันที่ที่เลือกเป็น พ.ศ.
+  const selStr=formatDateThai(d);
+  const nextStr=formatDateThai(next);
+  document.getElementById('acModalNext').textContent='วันที่เลือก '+selStr+' · ครั้งถัดไป '+nextStr;
 }
 function closeAcModal(){document.getElementById('acModal').style.display='none';}
 async function confirmAcClean(){
