@@ -1312,6 +1312,9 @@ function addVeh(type){
   });
 }
 
+function openParkPicker(type,idx,currentSlot){
+  showParkingPicker(type,currentSlot,function(slot){changeLock(type,idx,slot);});
+}
 function changeLock(type,idx,newSlot){
   const t=findTenant();
   const key=type==='car'?'รถยนต์ล็อก':'มอเตอร์ล็อก';
