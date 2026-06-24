@@ -676,7 +676,7 @@ function showPage(name){
   const sa=document.getElementById('scrollArea');if(sa)sa.scrollTop=0;
   if(name==='dashboard'){renderDashboard();}
   if(name==='bills')renderBillsTable();
-  if(name==='tenants'){renderTenants();renderTenants2();}
+  if(name==='tenants'){if(dataLoaded)renderTenants2();else{renderTenants();renderTenants2();}}
   if(name==='meter'){initMeterMonth();setTimeout(renderMeterEntry,50);}
   if(name==='rooms'){renderRooms();renderRooms2();}
   if(name==='settings')loadRates();
@@ -808,7 +808,7 @@ async function togglePayment(rowIndex, newStatus){
 
 
 /* ===== METER ENTRY ===== */
-let METER_STATE={mode:'entry',type:'water',zone:'S',month:'',entries:{}};
+let METER_STATE={mode:'entry',type:'water',zone:'ALL',month:'',entries:{}};
 
 function setMeterType(type){
   METER_STATE.type=type;
