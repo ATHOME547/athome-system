@@ -97,7 +97,8 @@ tr:last-child td{border-bottom:none;}
 .mp-display{flex:1;text-align:center;font-size:15px;font-weight:700;color:var(--text);font-family:var(--mono);}
 .zone-btn-small{padding:6px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--text2);cursor:pointer;text-align:center;min-width:36px;transition:all 0.15s;}
 .zone-btn-small:hover{border-color:var(--text2);color:var(--text);}
-.zone-btn-small[data-zone="S"].active{background:#c084fc;color:#1a1d27;border-color:#c084fc;}
+.zone-btn-small[data-zone="ALL"].active{background:#c084fc;color:#1a0a2e;border-color:#c084fc;}
+.zone-btn-small[data-zone="S"].active{background:var(--red);color:#fff;border-color:var(--red);}
 .zone-btn-small[data-zone="A"].active{background:var(--green);color:#000;border-color:var(--green);}
 .zone-btn-small[data-zone="B"].active{background:var(--yellow);color:#000;border-color:var(--yellow);}
 .meter-type-btn{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text2);padding:8px;border-radius:8px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;}
@@ -312,8 +313,16 @@ tr:last-child td{border-bottom:none;}
 
   <!-- ROOMS -->
   <div class="page" id="page-rooms">
-    <div class="section-title">ห้องพักทั้งหมด</div>
-    <div class="room-grid" id="roomGrid"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <span style="font-size:15px;font-weight:600;">🚪 ห้องพัก</span>
+      <div style="display:flex;gap:5px;" id="roomZoneBtns2">
+        <button class="zone-btn-small active" data-zone="ALL" onclick="setRoomZone2('ALL')" style="font-size:11px;">ทั้งหมด</button>
+        <button class="zone-btn-small" data-zone="S" onclick="setRoomZone2('S')">S</button>
+        <button class="zone-btn-small" data-zone="A" onclick="setRoomZone2('A')">A</button>
+        <button class="zone-btn-small" data-zone="B" onclick="setRoomZone2('B')">B</button>
+      </div>
+    </div>
+    <div id="roomList2"></div>
   </div>
 
   <!-- SETTINGS -->
@@ -494,7 +503,7 @@ function showPage(name){
   if(name==='bills')renderBillsTable();
   if(name==='tenants')renderTenants();
   if(name==='meter'){initMeterMonth();setTimeout(renderMeterEntry,50);}
-  if(name==='rooms')renderRooms();
+  if(name==='rooms'){renderRooms();renderRooms2();}
   if(name==='settings')loadRates();
 }
 
@@ -891,6 +900,11 @@ function changeMonth(delta){
 }
 
 
+.room-list-row{background:var(--surface);border-radius:10px;padding:11px 14px;margin-bottom:6px;border:1px solid var(--border2);cursor:pointer;display:flex;align-items:center;gap:12px;}
+.room-list-row:active{opacity:0.8;}
+.room-list-row.vacant{opacity:0.5;}
+.room-list-row.warn-ac{border-color:var(--yellow);}
+.room-list-row.danger-ac{border-color:var(--red);}
 /* ===== DASHBOARD V2 ===== */
 const THAI_MONTHS_DASH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 let dashView='month';
@@ -1066,6 +1080,83 @@ function mkBarChart(id,labels,data,color){
   if(charts[id])charts[id].destroy();
   const ctx=document.getElementById(id);if(!ctx)return;
   charts[id]=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data,backgroundColor:data.map((_,i)=>i===data.length-1?color:color+'55'),borderColor:color,borderWidth:1.5,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8b90b8',font:{family:'Sarabun',size:10}},grid:{color:'#2e3350'}},y:{ticks:{color:'#8b90b8',font:{family:'Sarabun',size:10}},grid:{color:'#2e3350'}}}}});
+}
+
+
+/* ===== ROOMS PAGE V2 ===== */
+let roomZone2='ALL';
+
+function setRoomZone2(z){
+  roomZone2=z;
+  document.querySelectorAll('#roomZoneBtns2 .zone-btn-small').forEach(b=>b.classList.toggle('active',b.dataset.zone===z));
+  renderRooms2();
+}
+
+function getAcStatus(code){
+  // Check AC cleaning status from a hypothetical ac_clean sheet or local storage
+  // For now return null (no data)
+  return null;
+}
+
+function renderRooms2(){
+  if(!dataLoaded){document.getElementById('roomList2').innerHTML='<div style="text-align:center;padding:30px;color:var(--text3);">ยังไม่ได้โหลดข้อมูล</div>';return;}
+  const rooms=DATA.rooms.filter(r=>{
+    if(roomZone2==='ALL')return true;
+    const code=String(r['ห้องเลขที่']||'').trim().toUpperCase();
+    const bldg=String(r['อาคาร']||'').trim().toUpperCase();
+    return code.startsWith(roomZone2)||bldg===roomZone2;
+  }).sort((a,b)=>{
+    const za=(a['ห้องเลขที่']||'').trim().toUpperCase().charAt(0);
+    const zb=(b['ห้องเลขที่']||'').trim().toUpperCase().charAt(0);
+    const order={'S':0,'A':1,'B':2};
+    const oa=order[za]??3;const ob=order[zb]??3;
+    if(oa!==ob)return oa-ob;
+    return(a['ห้องเลขที่']||'')>(b['ห้องเลขที่']||'')?1:-1;
+  });
+
+  if(!rooms.length){document.getElementById('roomList2').innerHTML='<div style="text-align:center;padding:30px;color:var(--text3);">ไม่พบห้องในโซนนี้</div>';return;}
+
+  let lastZone='';
+  document.getElementById('roomList2').innerHTML=rooms.map(r=>{
+    const code=r['ห้องเลขที่']||'';
+    const zone=code.trim().toUpperCase().charAt(0);
+    const tenant=DATA.tenants.find(t=>normCode(t['ห้องเลขที่']||'')===normCode(code)&&!t['วันที่ออก']);
+    const isEmpty=!tenant;
+    const type=r['ประเภท']||'';
+    const isAir=type.includes('แอร์');
+
+    let zoneHdr='';
+    if(zone!==lastZone){
+      lastZone=zone;
+      const zoneRooms=rooms.filter(x=>x['ห้องเลขที่'].trim().toUpperCase().charAt(0)===zone);
+      zoneHdr=`<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;padding:4px 2px;margin:8px 0 6px;">โซน ${zone} · ${zoneRooms.length} ห้อง</div>`;
+    }
+
+    // AC warning (placeholder - will use real data later)
+    let acBorder='';let acSub='';
+    if(isAir){
+      acSub=`<div style="font-size:11px;color:var(--text2);">❄️ แอร์</div>`;
+    }
+
+    const badge=isEmpty
+      ?`<span style="background:var(--surface2);color:var(--text3);padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;">ว่าง</span>`
+      :`<span style="background:#1a3a2a;color:var(--green);padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;">มีคน</span>`;
+
+    return`${zoneHdr}<div class="room-list-row ${isEmpty?'vacant':''} ${acBorder}" onclick="openRoomDetail('${code}')">
+      <span style="font-family:var(--mono);font-size:18px;font-weight:700;min-width:54px;color:${isEmpty?'var(--text3)':'var(--text)'};">${code}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;color:${isEmpty?'var(--text3)':'var(--text)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${isEmpty?'ว่าง':(tenant['ชื่อ-นามสกุล']||'—')}</div>
+        ${acSub||`<div style="font-size:11px;color:var(--text3);">${type}</div>`}
+      </div>
+      ${badge}
+      <span style="color:var(--border);font-size:16px;">›</span>
+    </div>`;
+  }).join('');
+}
+
+function openRoomDetail(code){
+  // Room detail page - will implement next
+  alert('รายละเอียดห้อง '+code+' — กำลังพัฒนา');
 }
 
 
