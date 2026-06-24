@@ -1289,39 +1289,64 @@ let acModalRoom='';
 function showAcModal(code,lastDate){
   acModalRoom=code;
   const today=new Date();
-  const yyyy=today.getFullYear();
-  const mm=String(today.getMonth()+1).padStart(2,'0');
-  const dd=String(today.getDate()).padStart(2,'0');
+  const todayDay=today.getDate();
+  const todayMonth=today.getMonth()+1;
+  const todayYear=today.getFullYear()+543; // BE year
   document.getElementById('acModalRoom').textContent='ห้อง '+code;
-  document.getElementById('acModalDateInput').value=`${yyyy}-${mm}-${dd}`;
-  // Show Thai year label
-  const thaiYear=yyyy+543;
-  document.getElementById('acModalDateInput').setAttribute('data-thai-year',thaiYear);
+
+  // Populate day
+  const dayEl=document.getElementById('acDay');
+  dayEl.innerHTML='';
+  for(let d=1;d<=31;d++){
+    const o=document.createElement('option');
+    o.value=d;o.textContent=String(d).padStart(2,'0');
+    if(d===todayDay)o.selected=true;
+    dayEl.appendChild(o);
+  }
+  // Populate month
+  const monthEl=document.getElementById('acMonth');
+  const mNames=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  monthEl.innerHTML='';
+  for(let m=1;m<=12;m++){
+    const o=document.createElement('option');
+    o.value=m;o.textContent=mNames[m-1];
+    if(m===todayMonth)o.selected=true;
+    monthEl.appendChild(o);
+  }
+  // Populate year (BE) - 5 years back to 1 year forward
+  const yearEl=document.getElementById('acYear');
+  yearEl.innerHTML='';
+  for(let y=todayYear-5;y<=todayYear+1;y++){
+    const o=document.createElement('option');
+    o.value=y;o.textContent=y;
+    if(y===todayYear)o.selected=true;
+    yearEl.appendChild(o);
+  }
   updateAcNext();
   document.getElementById('acModal').style.display='flex';
 }
 
 function updateAcNext(){
-  const val=document.getElementById('acModalDateInput').value;
-  if(!val){document.getElementById('acModalNext').textContent='';return;}
-  // val is YYYY-MM-DD in CE
-  const parts=val.split('-');
-  const ceYear=parseInt(parts[0]);
-  const mo=parseInt(parts[1]);
-  const day=parseInt(parts[2]);
-  const d=new Date(ceYear,mo-1,day);
+  const day=parseInt(document.getElementById('acDay').value);
+  const mo=parseInt(document.getElementById('acMonth').value);
+  const beYear=parseInt(document.getElementById('acYear').value);
+  const ceYear=beYear-543;
   const next=new Date(ceYear,mo-1+6,day);
-  // formatDateThai converts CE to BE correctly
-  const selStr=formatDateThai(d);
-  const nextStr=formatDateThai(next);
+  const nextBE=next.getFullYear()+543;
+  const nextStr=String(next.getDate()).padStart(2,'0')+'/'+String(next.getMonth()+1).padStart(2,'0')+'/'+nextBE;
   document.getElementById('acModalNext').textContent='ครั้งถัดไป '+nextStr;
+}
+
+function getAcSelectedDate(){
+  const day=parseInt(document.getElementById('acDay').value);
+  const mo=parseInt(document.getElementById('acMonth').value);
+  const beYear=parseInt(document.getElementById('acYear').value);
+  return String(day).padStart(2,'0')+'/'+String(mo).padStart(2,'0')+'/'+beYear;
 }
 function closeAcModal(){document.getElementById('acModal').style.display='none';}
 async function confirmAcClean(){
-  const inputVal=document.getElementById('acModalDateInput').value;
-  if(!inputVal){alert('กรุณาเลือกวันที่');return;}
-  const d=new Date(inputVal);
-  const todayStr=formatDateThai(d);
+  const todayStr=getAcSelectedDate();
+  if(!todayStr){alert('กรุณาเลือกวันที่');return;}
   const room=DATA.rooms.find(r=>normCode(r['ห้องเลขที่'])===normCode(acModalRoom));
   if(room){
     try{
