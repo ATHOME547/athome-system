@@ -1511,6 +1511,110 @@ function openParkPicker(type,idx,currentSlot){
     renderVehCard(t);
   });
 }
+function editRoomLockInline(type,roomIdx,lockIdx,current){
+  const rooms=findTenantRooms();
+  const r=rooms[roomIdx];
+  if(!r)return;
+  showParkingPicker(type,current,async function(slot){
+    const key=type==='car'?'รถยนต์ล็อก':'จักยานยนต์ล็อก';
+    const arr=(r[key]||'').split(',').filter(Boolean);
+    arr[lockIdx]=slot;r[key]=arr.join(',');
+    try{
+      const idx2=DATA.tenants.indexOf(r)+1;
+      await apiPost({sheet:'ผู้เช่า',action:'update_row',rowIndex:idx2,data:{[key]:r[key]}});
+    }catch(e){}
+    renderTenantDetail();
+  });
+}
+
+function editRoomAddLockInline(type,roomIdx){
+  const rooms=findTenantRooms();
+  const r=rooms[roomIdx];
+  if(!r)return;
+  showParkingPicker(type,null,async function(slot){
+    const key=type==='car'?'รถยนต์ล็อก':'จักยานยนต์ล็อก';
+    r[key]=(r[key]?r[key]+',':'')+slot;
+    try{
+      const idx2=DATA.tenants.indexOf(r)+1;
+      await apiPost({sheet:'ผู้เช่า',action:'update_row',rowIndex:idx2,data:{[key]:r[key]}});
+    }catch(e){}
+    renderTenantDetail();
+  });
+}
+
+async function returnRoomInline(roomCode){
+  const rooms=findTenantRooms();
+  const r=rooms.find(x=>x['ห้องเลขที่']===roomCode);
+  if(!r)return;
+  const today=new Date();
+  const todayStr=formatDateThai(today);
+  if(!confirm('คืนห้อง '+roomCode+' วันที่ '+todayStr+' ใช่ไหม?'))return;
+  try{
+    const idx2=DATA.tenants.indexOf(r)+1;
+    const res=await apiPost({sheet:'ผู้เช่า',action:'update_row',rowIndex:idx2,data:{'วันที่ออก':todayStr}});
+    if(res.success){r['วันที่ออก']=todayStr;renderTenantDetail();renderTenants2();}
+  }catch(e){alert('เกิดข้อผิดพลาด: '+e.message);}
+}
+
+function addRoomToTenant(){
+  // Show room picker to add new room for this tenant
+  showRoomPickerModal(async function(roomCode){
+    const t=findTenant();
+    if(!t)return;
+    const id=t['รหัสผู้เช่า'];
+    const name=t['ชื่อ-นามสกุล'];
+    const phone=t['เบอร์โทร'];
+    const deposit=t['เงินมัดจำ']||'';
+    const dateIn=t['วันที่เข้าอยู่']||formatDateThai(new Date());
+    const newRow={
+      'รหัสผู้เช่า':id,'ชื่อ-นามสกุล':name,'เบอร์โทร':phone,
+      'ห้องเลขที่':roomCode,'วันที่เข้าอยู่':dateIn,
+      'รถยนต์ล็อก':'','จักยานยนต์ล็อก':'','วันที่ออก':'',
+      'หมายเหตุ':t['หมายเหตุ']||'','เงินมัดจำ':deposit
+    };
+    try{
+      const res=await apiPost({sheet:'ผู้เช่า',action:'append_row',data:newRow});
+      if(res.success){DATA.tenants.push(newRow);renderTenantDetail();renderTenants2();}
+      else alert('บันทึกไม่สำเร็จ');
+    }catch(e){alert('เกิดข้อผิดพลาด: '+e.message);}
+  });
+}
+
+function showRoomPickerModal(callback){
+  const usedRooms=DATA.tenants.filter(t=>!t['วันที่ออก']).map(t=>normCode(t['ห้องเลขที่']||''));
+  const modal=document.createElement('div');
+  modal.id='roomPickerModal';
+  modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1003;display:flex;align-items:flex-end;';
+  const roomsGrid=DATA.rooms.sort((a,b)=>{
+    const order={'S':0,'A':1,'B':2};
+    const za=(a['ห้องเลขที่']||'').charAt(0);const zb=(b['ห้องเลขที่']||'').charAt(0);
+    if((order[za]??3)!==(order[zb]??3))return(order[za]??3)-(order[zb]??3);
+    return(a['ห้องเลขที่']||'')>(b['ห้องเลขที่']||'')?1:-1;
+  }).map(r=>{
+    const code=r['ห้องเลขที่']||'';
+    const isOccupied=usedRooms.includes(normCode(code));
+    if(isOccupied){
+      return`<div style="padding:9px 4px;border-radius:7px;text-align:center;font-family:var(--mono);font-size:11px;font-weight:700;background:#111;color:#333;border:1.5px solid var(--border2);">${code}</div>`;
+    }
+    return`<div onclick="selectRoomFromPicker('${code}')" style="padding:9px 4px;border-radius:7px;text-align:center;font-family:var(--mono);font-size:11px;font-weight:700;background:#1a2a1a;color:var(--green);border:1.5px solid var(--border2);cursor:pointer;">${code}</div>`;
+  }).join('');
+  modal.innerHTML=`<div style="background:var(--surface);border-radius:16px 16px 0 0;border-top:1px solid var(--border2);padding:16px;width:100%;box-sizing:border-box;max-height:75vh;overflow-y:auto;">
+    <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 14px;"></div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px;">🚪 เลือกห้องที่เช่าเพิ่ม</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;">สีเขียว = ว่าง · สีเทา = มีคนอยู่แล้ว</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;">${roomsGrid}</div>
+    <button onclick="document.getElementById('roomPickerModal').remove()" style="width:100%;padding:11px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);border-radius:9px;font-family:var(--font);font-size:13px;cursor:pointer;">ยกเลิก</button>
+  </div>`;
+  window._roomPickerCallback=callback;
+  document.body.appendChild(modal);
+}
+
+function selectRoomFromPicker(code){
+  const cb=window._roomPickerCallback;
+  document.getElementById('roomPickerModal').remove();
+  if(cb)cb(code);
+}
+
 function changeLock(type,idx,newSlot){
   const t=findTenant();
   const key=type==='car'?'รถยนต์ล็อก':'จักยานยนต์ล็อก';
