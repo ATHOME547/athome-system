@@ -1364,9 +1364,7 @@ async function saveVeh(){
     });
   });
   if(dupsWith.length){
-    alert('เลขล็อกซ้ำกับผู้เช่าอื่น:
-'+dupsWith.join('
-'));
+    alert('เลขล็อกซ้ำกับผู้เช่าอื่น: '+dupsWith.join(', '));
     return;
   }
   
