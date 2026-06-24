@@ -1218,7 +1218,9 @@ function closeTenantDetail(){
 }
 
 function findTenant(){
-  return DATA.tenants.find(t=>(t['รหัสผู้เช่า']||t['ห้องเลขที่'])===currentTenantId||normCode(t['ห้องเลขที่'])===normCode(currentTenantId));
+  // Find by room code first (most reliable), then by tenant ID
+  return DATA.tenants.find(t=>normCode(t['ห้องเลขที่'])===normCode(currentTenantId))
+    ||DATA.tenants.find(t=>t['รหัสผู้เช่า']===currentTenantId);
 }
 
 function renderTenantDetail(){
@@ -1501,7 +1503,7 @@ function renderTenants2(){
       ...motos2.map(l=>`<span style="background:#3a2a1a;color:var(--yellow);font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">${l.trim()}</span>`)
     ].join('');
 
-    return`${zoneHdr}<div class="room-list-row${isPast?' vacant':''}" onclick="openTenantDetail('${t['รหัสผู้เช่า']||code}')">
+    return`${zoneHdr}<div class="room-list-row${isPast?' vacant':''}" onclick="openTenantDetail('${code}')">
       <span style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--blue);min-width:54px;">${code}</span>
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
