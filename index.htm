@@ -1265,7 +1265,7 @@ function renderTenantDetail(){
 function renderVehCard(t){
   if(vehEditMode){
     const cars=(t['รถยนต์ล็อก']||'').split(',').filter(Boolean);
-    const motos=(t['มอเตอร์ล็อก']||'').split(',').filter(Boolean);
+    const motos=(t['จักยานยนต์ล็อก']||'').split(',').filter(Boolean);
     let rows='';
     cars.forEach((lock,i)=>{rows+=`<div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--surface2);gap:10px;">
         <span style="font-size:16px;">🚗</span>
@@ -1288,7 +1288,7 @@ function renderVehCard(t){
     document.getElementById('tdVehCard').style.border='1px solid var(--blue)';
   }else{
     const cars=(t['รถยนต์ล็อก']||'').split(',').filter(Boolean);
-    const motos=(t['มอเตอร์ล็อก']||'').split(',').filter(Boolean);
+    const motos=(t['จักยานยนต์ล็อก']||'').split(',').filter(Boolean);
     if(!cars.length&&!motos.length){
       document.getElementById('tdVehCard').innerHTML='<div style="padding:14px;font-size:12px;color:var(--text3);">ไม่มียานพาหนะ</div>';
     }else{
@@ -1307,7 +1307,7 @@ function cancelVehEdit(){vehEditMode=false;renderVehCard(findTenant());}
 function addVeh(type){
   showParkingPicker(type, null, (slot)=>{
     const t=findTenant();
-    const key=type==='car'?'รถยนต์ล็อก':'มอเตอร์ล็อก';
+    const key=type==='car'?'รถยนต์ล็อก':'จักยานยนต์ล็อก';
     t[key]=(t[key]?t[key]+',':'')+slot;
     vehEditMode=true;
     renderVehCard(t);
@@ -1319,7 +1319,7 @@ function openParkPicker(type,idx,currentSlot){
 }
 function changeLock(type,idx,newSlot){
   const t=findTenant();
-  const key=type==='car'?'รถยนต์ล็อก':'มอเตอร์ล็อก';
+  const key=type==='car'?'รถยนต์ล็อก':'จักยานยนต์ล็อก';
   const arr=(t[key]||'').split(',').filter(Boolean);
   arr[idx]=newSlot;
   t[key]=arr.join(',');
@@ -1331,7 +1331,7 @@ function changeLock(type,idx,newSlot){
 
 function removeVeh(type,idx){
   const t=findTenant();
-  const key=type==='car'?'รถยนต์ล็อก':'มอเตอร์ล็อก';
+  const key=type==='car'?'รถยนต์ล็อก':'จักยานยนต์ล็อก';
   const arr=(t[key]||'').split(',').filter(Boolean);
   arr.splice(idx,1);
   t[key]=arr.join(',');
@@ -1360,7 +1360,7 @@ async function saveVeh(){
   DATA.tenants.forEach(other=>{
     if(other===t||other['วันที่ออก'])return;
     const otherCars=(other['รถยนต์ล็อก']||'').split(',').filter(Boolean).map(x=>x.trim());
-    const otherMotos=(other['มอเตอร์ล็อก']||'').split(',').filter(Boolean).map(x=>x.trim());
+    const otherMotos=(other['จักยานยนต์ล็อก']||'').split(',').filter(Boolean).map(x=>x.trim());
     newCars.forEach(lock=>{
       if(otherCars.includes(lock))dupsWith.push('รถยนต์ ล็อก '+lock+' ('+other['ห้องเลขที่']+' - '+other['ชื่อ-นามสกุล']+')');
     });
@@ -1374,10 +1374,10 @@ async function saveVeh(){
   }
   
   t['รถยนต์ล็อก']=newCars.join(',');
-  t['มอเตอร์ล็อก']=newMotos.join(',');
+  t['จักยานยนต์ล็อก']=newMotos.join(',');
   try{
     const idx2=DATA.tenants.indexOf(t)+1;
-    const res=await apiPost({sheet:'ผู้เช่า',action:'update_row',rowIndex:idx2,data:{'รถยนต์ล็อก':t['รถยนต์ล็อก'],'มอเตอร์ล็อก':t['มอเตอร์ล็อก']}});
+    const res=await apiPost({sheet:'ผู้เช่า',action:'update_row',rowIndex:idx2,data:{'รถยนต์ล็อก':t['รถยนต์ล็อก'],'จักยานยนต์ล็อก':t['จักยานยนต์ล็อก']}});
     if(res.success){vehEditMode=false;renderVehCard(t);}
     else alert('บันทึกไม่สำเร็จ');
   }catch(e){alert('เกิดข้อผิดพลาด: '+e.message);}
@@ -1491,13 +1491,13 @@ function renderTenants2(){
     const payColor=getPaymentDot(code);
     // Vehicles
     const cars=t['รถยนต์ล็อก']?t['รถยนต์ล็อก'].split(',').length:0;
-    const motos=t['มอเตอร์ล็อก']?t['มอเตอร์ล็อก'].split(',').length:0;
+    const motos=t['จักยานยนต์ล็อก']?t['จักยานยนต์ล็อก'].split(',').length:0;
     const vehHtml=(cars?`<span style="font-size:10px;color:var(--text2);">🚗${cars}</span>`:'')+(motos?`<span style="font-size:10px;color:var(--text2);">🏍️${motos}</span>`:'');
     
     const isPast=!!t['วันที่ออก'];
     // Vehicle badges
     const cars2=(t['รถยนต์ล็อก']||'').split(',').filter(Boolean);
-    const motos2=(t['มอเตอร์ล็อก']||'').split(',').filter(Boolean);
+    const motos2=(t['จักยานยนต์ล็อก']||'').split(',').filter(Boolean);
     const vehBadges=[
       ...cars2.map(l=>`<span style="background:#1a2a3a;color:var(--blue);font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">${l.trim()}</span>`),
       ...motos2.map(l=>`<span style="background:#3a2a1a;color:var(--yellow);font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">${l.trim()}</span>`)
@@ -1838,7 +1838,7 @@ let parkingSelected=null;
 let parkingCallback=null;
 
 function getUsedSlots(type){
-  const key=type==='car'?'รถยนต์ล็อก':'มอเตอร์ล็อก';
+  const key=type==='car'?'รถยนต์ล็อก':'จักยานยนต์ล็อก';
   const used=[];
   DATA.tenants.filter(t=>!t['วันที่ออก']).forEach(t=>{
     (t[key]||'').split(',').filter(Boolean).forEach(s=>used.push(s.trim()));
