@@ -259,14 +259,16 @@ tr:last-child td{border-bottom:none;}
 
   <!-- TENANTS -->
   <div class="page" id="page-tenants">
-    <div class="filter-row">
-      <input class="search-box" id="tenantSearch" placeholder="🔍 ค้นหาชื่อ / ห้อง..." oninput="renderTenants()" style="flex:2;">
-      <select class="filter-sel" id="tenantStatus" onchange="renderTenants()">
-        <option value="current">ปัจจุบัน</option>
-        <option value="all">ทั้งหมด</option>
-      </select>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <span style="font-size:15px;font-weight:600;">👥 ผู้เช่า</span>
+      <button onclick="openAddTenant()" style="background:var(--green);color:#000;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;">+ เพิ่มผู้เช่า</button>
     </div>
-    <div class="tenant-list" id="tenantGrid"></div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <button class="zone-btn-small active" id="tStatusBtn-current" onclick="setTenantStatus2('current')" style="flex:1;font-size:12px;">ปัจจุบัน</button>
+      <button class="zone-btn-small" id="tStatusBtn-past" onclick="setTenantStatus2('past')" style="flex:1;font-size:12px;">เคยอยู่</button>
+    </div>
+    <input class="search-box" id="tenantSearch2" placeholder="🔍 ค้นหาชื่อ / ห้อง / เบอร์..." oninput="renderTenants2()" style="margin-bottom:10px;">
+    <div id="tenantList2"></div>
   </div>
 
   <!-- METER -->
@@ -560,7 +562,7 @@ function showPage(name){
   const sa=document.getElementById('scrollArea');if(sa)sa.scrollTop=0;
   if(name==='dashboard'){renderDashboard();}
   if(name==='bills')renderBillsTable();
-  if(name==='tenants')renderTenants();
+  if(name==='tenants'){renderTenants();renderTenants2();}
   if(name==='meter'){initMeterMonth();setTimeout(renderMeterEntry,50);}
   if(name==='rooms'){renderRooms();renderRooms2();}
   if(name==='settings')loadRates();
@@ -1137,6 +1139,88 @@ function mkBarChart(id,labels,data,color){
 }
 
 
+/* ===== TENANTS PAGE V2 ===== */
+let tenantStatus2='current';
+
+function setTenantStatus2(s){
+  tenantStatus2=s;
+  document.querySelectorAll('[id^="tStatusBtn-"]').forEach(b=>{
+    b.classList.toggle('active', b.id==='tStatusBtn-'+s);
+  });
+  renderTenants2();
+}
+
+function getPaymentDot(tenantCode){
+  // Calculate payment rating based on recent bills
+  const bills=DATA.bills.filter(b=>normCode(b['ห้องเลขที่'])===normCode(tenantCode));
+  if(!bills.length)return'var(--text3)';
+  const recent=bills.slice(-3);
+  const unpaid=recent.filter(b=>!b['สถานะ']||b['สถานะ']==='ค้างชำระ').length;
+  const late=recent.filter(b=>b['สถานะ']&&b['สถานะ'].includes('ชำระ')&&parseInt((b['วันที่ชำระ']||'').split('/')[0])>10).length;
+  if(unpaid>0)return'var(--red)';
+  if(late>1)return'var(--yellow)';
+  return'var(--green)';
+}
+
+function renderTenants2(){
+  if(!dataLoaded){document.getElementById('tenantList2').innerHTML='<div style="text-align:center;padding:30px;color:var(--text3);">ยังไม่ได้โหลดข้อมูล</div>';return;}
+  const q=(document.getElementById('tenantSearch2').value||'').toLowerCase();
+  let list=tenantStatus2==='current'
+    ?DATA.tenants.filter(t=>!t['วันที่ออก'])
+    :DATA.tenants.filter(t=>!!t['วันที่ออก']);
+  if(q)list=list.filter(t=>JSON.stringify(t).toLowerCase().includes(q));
+  list=[...list].sort((a,b)=>{
+    const za=(a['ห้องเลขที่']||'').trim().toUpperCase().charAt(0);
+    const zb=(b['ห้องเลขที่']||'').trim().toUpperCase().charAt(0);
+    const order={'S':0,'A':1,'B':2};
+    if((order[za]??3)!==(order[zb]??3))return(order[za]??3)-(order[zb]??3);
+    return(a['ห้องเลขที่']||'')>(b['ห้องเลขที่']||'')?1:-1;
+  });
+  if(!list.length){document.getElementById('tenantList2').innerHTML='<div style="text-align:center;padding:30px;color:var(--text3);">ไม่พบข้อมูล</div>';return;}
+  
+  let lastZone='';
+  document.getElementById('tenantList2').innerHTML=list.map(t=>{
+    const code=t['ห้องเลขที่']||'';
+    const zone=code.trim().toUpperCase().charAt(0);
+    let zoneHdr='';
+    if(zone!==lastZone&&tenantStatus2==='current'){
+      lastZone=zone;
+      zoneHdr=`<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;padding:4px 2px;margin:8px 0 6px;">โซน ${zone}</div>`;
+    }
+    const dur=calcDur2(t['วันที่เข้าอยู่'],t['วันที่ออก']);
+    const payColor=getPaymentDot(code);
+    // Vehicles
+    const cars=t['รถยนต์ล็อก']?t['รถยนต์ล็อก'].split(',').length:0;
+    const motos=t['มอเตอร์ล็อก']?t['มอเตอร์ล็อก'].split(',').length:0;
+    const vehHtml=(cars?`<span style="font-size:10px;color:var(--text2);">🚗${cars}</span>`:'')+(motos?`<span style="font-size:10px;color:var(--text2);">🏍️${motos}</span>`:'');
+    
+    const isPast=!!t['วันที่ออก'];
+    return`${zoneHdr}<div class="room-list-row${isPast?' vacant':''}" onclick="openTenantDetail('${t['รหัสผู้เช่า']||code}')">
+      <span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--blue);min-width:46px;">${code}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;">${t['ชื่อ-นามสกุล']||'—'}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--text2);">📞 ${t['เบอร์โทร']||'—'}</span>
+          ${dur?`<span style="font-size:11px;font-family:var(--mono);font-weight:600;color:var(--teal);">${dur}</span>`:''}
+          ${vehHtml}
+          ${isPast?`<span style="font-size:10px;color:var(--text3);">ออก ${t['วันที่ออก']}</span>`:''}
+        </div>
+      </div>
+      <div style="width:8px;height:8px;border-radius:50%;background:${payColor};flex-shrink:0;"></div>
+      <span style="color:var(--border2);font-size:14px;">›</span>
+    </div>`;
+  }).join('');
+}
+
+function openAddTenant(){
+  alert('ฟีเจอร์เพิ่มผู้เช่า — กำลังพัฒนา');
+}
+
+function openTenantDetail(id){
+  alert('รายละเอียดผู้เช่า — กำลังพัฒนา');
+}
+
+
 /* ===== ROOM DETAIL ===== */
 let currentRoomCode = '';
 let rdChartType = 'water';
@@ -1400,7 +1484,7 @@ function renderRooms2(){
 
     // AC warning based on ล้างแอร์ล่าสุด field
     let acBorder='';let acSub='';
-    if(isAir){console.log('AC check',code,r['ล้างแอร์ล่าสุด']);
+    if(isAir){
       const acDate=r['ล้างแอร์ล่าสุด']||'';
       if(acDate){
         const d=parseDateThai(acDate);
