@@ -1409,9 +1409,11 @@ function findTenantRooms(){
 function renderTenantDetail(){
   const t=findTenant();
   if(!t)return;
-  const isPast=!!t['วันที่ออก'];
+  const rooms=findTenantRooms();
+  const isPast=rooms.every(r=>!!r['วันที่ออก']);
   const room=DATA.rooms.find(r=>normCode(r['ห้องเลขที่'])===normCode(t['ห้องเลขที่']||''));
-  const dur=calcDur2(t['วันที่เข้าอยู่'],t['วันที่ออก']);
+  const dates=rooms.map(r=>r['วันที่เข้าอยู่']).filter(Boolean).sort();
+  const dur=calcDur2(dates[0],isPast?t['วันที่ออก']:null);
 
   document.getElementById('tdName').textContent=t['ชื่อ-นามสกุล']||'—';
   document.getElementById('tdStatus').textContent=isPast?'อดีตผู้เช่า':'ผู้เช่าปัจจุบัน';
