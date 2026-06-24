@@ -1242,6 +1242,8 @@ function renderRdChart(){
   const avg=valid.length?Math.round(valid.reduce((a,b)=>a+b,0)/valid.length):0;
   const max=valid.length?Math.max(...valid):0;
   const min=valid.length?Math.min(...valid):0;
+  const statColor=rdChartType==='water'?'#4f8ef7':'#f7c94f';
+  ['rdAvg','rdMax','rdMin'].forEach(id=>{document.getElementById(id).style.color=statColor;});
   document.getElementById('rdAvg').textContent=avg+' หน่วย';
   document.getElementById('rdMax').textContent=max+' หน่วย';
   document.getElementById('rdMin').textContent=min+' หน่วย';
@@ -1280,17 +1282,29 @@ let acModalRoom='';
 function showAcModal(code,lastDate){
   acModalRoom=code;
   const today=new Date();
-  const todayStr=formatDateThai(today);
-  const next=new Date(today.getFullYear(),today.getMonth()+6,today.getDate());
+  // Set input to today in YYYY-MM-DD format
+  const yyyy=today.getFullYear();
+  const mm=String(today.getMonth()+1).padStart(2,'0');
+  const dd=String(today.getDate()).padStart(2,'0');
   document.getElementById('acModalRoom').textContent='ห้อง '+code;
-  document.getElementById('acModalDate').textContent=todayStr;
-  document.getElementById('acModalNext').textContent='ครั้งถัดไป '+formatDateThai(next);
+  document.getElementById('acModalDateInput').value=`${yyyy}-${mm}-${dd}`;
+  updateAcNext();
   document.getElementById('acModal').style.display='flex';
+}
+
+function updateAcNext(){
+  const val=document.getElementById('acModalDateInput').value;
+  if(!val){document.getElementById('acModalNext').textContent='';return;}
+  const d=new Date(val);
+  const next=new Date(d.getFullYear(),d.getMonth()+6,d.getDate());
+  document.getElementById('acModalNext').textContent='ครั้งถัดไป '+formatDateThai(next);
 }
 function closeAcModal(){document.getElementById('acModal').style.display='none';}
 async function confirmAcClean(){
-  const today=new Date();
-  const todayStr=formatDateThai(today);
+  const inputVal=document.getElementById('acModalDateInput').value;
+  if(!inputVal){alert('กรุณาเลือกวันที่');return;}
+  const d=new Date(inputVal);
+  const todayStr=formatDateThai(d);
   const room=DATA.rooms.find(r=>normCode(r['ห้องเลขที่'])===normCode(acModalRoom));
   if(room){
     try{
@@ -1389,9 +1403,9 @@ loadData();
       <div id="acModalRoom" style="font-size:13px;color:var(--text2);margin-top:4px;"></div>
     </div>
     <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;margin-bottom:16px;">
-      <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">บันทึกวันที่</div>
-      <div id="acModalDate" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--green);"></div>
-      <div id="acModalNext" style="font-size:10px;color:var(--text3);margin-top:2px;"></div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">บันทึกวันที่</div>
+      <input type="date" id="acModalDateInput" style="background:var(--surface);border:1.5px solid var(--green);color:var(--green);padding:8px 12px;border-radius:8px;font-family:var(--mono);font-size:16px;font-weight:700;text-align:center;width:100%;box-sizing:border-box;-webkit-appearance:none;" oninput="updateAcNext()">
+      <div id="acModalNext" style="font-size:10px;color:var(--text3);margin-top:6px;"></div>
     </div>
     <div style="display:flex;gap:10px;">
       <button onclick="closeAcModal()" style="flex:1;padding:13px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);border-radius:10px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;">ยกเลิก</button>
