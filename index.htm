@@ -1829,7 +1829,96 @@ function renderRooms2(){
 // openRoomDetail is defined in Room Detail section above
 
 
+/* ===== PARKING SLOT PICKER ===== */
+let parkingType='';
+let parkingSelected=null;
+let parkingCallback=null;
+
+function getUsedSlots(type){
+  const key=type==='car'?'รถยนต์ล็อก':'มอเตอร์ล็อก';
+  const used=[];
+  DATA.tenants.filter(t=>!t['วันที่ออก']).forEach(t=>{
+    (t[key]||'').split(',').filter(Boolean).forEach(s=>used.push(s.trim()));
+  });
+  return used;
+}
+
+function getTotalSlots(type){
+  const rates=getRates();
+  return type==='car'?parseInt(rates.r_car_slots||14):parseInt(rates.r_moto_slots||41);
+}
+
+function showParkingPicker(type,currentSlot,callback){
+  parkingType=type;parkingSelected=currentSlot||null;parkingCallback=callback;
+  const total=getTotalSlots(type);
+  const used=getUsedSlots(type);
+  const usedOthers=used.filter(s=>s!==currentSlot&&s!==String(parseInt(currentSlot)));
+  const available=total-usedOthers.length;
+  const icon=type==='car'?'🚗':'🏍️';
+  const label=type==='car'?'รถยนต์':'มอเตอร์ไซค์';
+  document.getElementById('parkingModalTitle').textContent=icon+' เลือกช่องจอด'+label;
+  document.getElementById('parkingModalSub').textContent='ว่าง '+available+' ช่อง / ทั้งหมด '+total+' ช่อง';
+  let grid='';
+  for(let i=1;i<=total;i++){
+    const slot=String(i).padStart(2,'0');
+    const isTaken=usedOthers.includes(slot)||usedOthers.includes(String(i));
+    const isSel=parkingSelected===slot||parkingSelected===String(i);
+    if(isTaken){
+      grid+='<div style="padding:9px 4px;border-radius:7px;text-align:center;font-family:var(--mono);font-size:13px;font-weight:700;background:#111;color:#333;border:1.5px solid var(--border2);">'+slot+'</div>';
+    }else if(isSel){
+      grid+='<div onclick="selectParkSlot(''+slot+'')" style="padding:9px 4px;border-radius:7px;text-align:center;font-family:var(--mono);font-size:13px;font-weight:700;background:#1a3a2a;color:var(--green);border:1.5px solid var(--green);cursor:pointer;">'+slot+'</div>';
+    }else{
+      grid+='<div onclick="selectParkSlot(''+slot+'')" style="padding:9px 4px;border-radius:7px;text-align:center;font-family:var(--mono);font-size:13px;font-weight:700;background:var(--surface2);color:var(--text);border:1.5px solid var(--border2);cursor:pointer;">'+slot+'</div>';
+    }
+  }
+  document.getElementById('parkingSlotGrid').innerHTML=grid;
+  updateParkingBtn();
+  document.getElementById('parkingModal').style.display='flex';
+}
+
+function selectParkSlot(slot){
+  showParkingPicker(parkingType,slot,parkingCallback);
+}
+
+function updateParkingBtn(){
+  const btn=document.getElementById('parkingConfirmBtn');
+  if(!btn)return;
+  if(parkingSelected){btn.textContent='✓ เลือกล็อก '+parkingSelected;btn.style.opacity='1';}
+  else{btn.textContent='เลือกช่องจอด';btn.style.opacity='0.5';}
+}
+
+function closeParkingModal(){
+  document.getElementById('parkingModal').style.display='none';
+  parkingSelected=null;parkingCallback=null;
+}
+
+function confirmParking(){
+  if(!parkingSelected)return;
+  if(parkingCallback)parkingCallback(parkingSelected);
+  closeParkingModal();
+}
+
+
 loadData();
 </script>
 
+<!-- PARKING SLOT MODAL -->
+<div id="parkingModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1002;align-items:flex-end;">
+  <div style="background:var(--surface);border-radius:16px 16px 0 0;border-top:1px solid var(--border2);padding:16px;width:100%;box-sizing:border-box;max-height:75vh;overflow-y:auto;">
+    <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 14px;"></div>
+    <div id="parkingModalTitle" style="font-size:15px;font-weight:700;margin-bottom:4px;"></div>
+    <div id="parkingModalSub" style="font-size:12px;color:var(--text2);margin-bottom:10px;"></div>
+    <div style="display:flex;gap:12px;font-size:11px;color:var(--text2);margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:4px;"><div style="width:12px;height:12px;border-radius:3px;background:var(--surface2);border:1px solid var(--border2);"></div>ว่าง</div>
+      <div style="display:flex;align-items:center;gap:4px;"><div style="width:12px;height:12px;border-radius:3px;background:#111;border:1px solid var(--border2);"></div>มีคนใช้</div>
+      <div style="display:flex;align-items:center;gap:4px;"><div style="width:12px;height:12px;border-radius:3px;background:#1a3a2a;border:1px solid var(--green);"></div>เลือกแล้ว</div>
+    </div>
+    <div id="parkingSlotGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:14px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="closeParkingModal()" style="flex:1;padding:11px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);border-radius:9px;font-family:var(--font);font-size:13px;cursor:pointer;">ยกเลิก</button>
+      <button id="parkingConfirmBtn" onclick="confirmParking()" style="flex:2;padding:11px;background:var(--green);color:#000;border:none;border-radius:9px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;">เลือกช่องจอด</button>
+    </div>
+  </div>
+</div>
+</body>
 </html>
