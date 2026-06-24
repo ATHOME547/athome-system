@@ -454,7 +454,7 @@ tr:last-child td{border-bottom:none;}
       <div id="acModalRoom" style="font-size:13px;color:var(--text2);margin-top:4px;"></div>
     </div>
     <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;margin-bottom:16px;">
-      <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">บันทึกวันที่</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">บันทึกวันที่ <span style="color:var(--text3);">(กรอก ค.ศ. ระบบแปลงเป็น พ.ศ. ให้อัตโนมัติ)</span></div>
       <input type="date" id="acDateInput" style="background:var(--surface);border:1.5px solid var(--green);color:var(--green);padding:8px 12px;border-radius:8px;font-family:var(--mono);font-size:16px;font-weight:700;width:100%;box-sizing:border-box;" oninput="updateAcNext()">
       <div id="acModalNext" style="font-size:11px;color:var(--text3);margin-top:8px;"></div>
     </div>
@@ -1398,10 +1398,27 @@ function renderRooms2(){
       zoneHdr=`<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;padding:4px 2px;margin:8px 0 6px;">โซน ${zone} · ${zoneRooms.length} ห้อง</div>`;
     }
 
-    // AC warning (placeholder - will use real data later)
+    // AC warning based on ล้างแอร์ล่าสุด field
     let acBorder='';let acSub='';
     if(isAir){
-      acSub=`<div style="font-size:11px;color:var(--text2);">❄️ แอร์</div>`;
+      const acDate=r['ล้างแอร์ล่าสุด']||'';
+      if(acDate){
+        const d=parseDateThai(acDate);
+        const now=new Date();
+        const months=d?Math.floor((now-d)/(1000*60*60*24*30)):999;
+        if(months>=6){
+          acBorder='danger-ac';
+          acSub=`<div style="font-size:11px;color:var(--red);">❄️ เกินกำหนดล้างแอร์</div>`;
+        }else if(months>=5){
+          acBorder='warn-ac';
+          acSub=`<div style="font-size:11px;color:var(--yellow);">❄️ ใกล้ถึงเวลาล้างแอร์</div>`;
+        }else{
+          acSub=`<div style="font-size:11px;color:var(--text2);">❄️ แอร์</div>`;
+        }
+      }else{
+        acBorder='warn-ac';
+        acSub=`<div style="font-size:11px;color:var(--yellow);">❄️ ยังไม่มีประวัติล้างแอร์</div>`;
+      }
     }
 
     const badge=isEmpty
