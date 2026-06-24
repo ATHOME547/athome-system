@@ -700,7 +700,14 @@ function renderMeterEntry(){
     const bldg=String(r['อาคาร']||'').trim().toUpperCase();
     const code=String(r['ห้องเลขที่']||'').trim().toUpperCase();
     return bldg===z||code.startsWith(z);
-  }).sort((a,b)=>(a['ห้องเลขที่']||'')>(b['ห้องเลขที่']||'')?1:-1);
+  }).sort((a,b)=>{
+    const za=(a['ห้องเลขที่']||'').trim().toUpperCase().charAt(0);
+    const zb=(b['ห้องเลขที่']||'').trim().toUpperCase().charAt(0);
+    const order={'S':0,'A':1,'B':2};
+    const oa=order[za]??3;const ob=order[zb]??3;
+    if(oa!==ob)return oa-ob;
+    return(a['ห้องเลขที่']||'')>(b['ห้องเลขที่']||'')?1:-1;
+  });
   if(rooms.length===0){
     document.getElementById('meterEntryRows').innerHTML=`<div class="empty" style="padding:20px;">ไม่พบห้องในโซน ${z}</div>`;
     document.getElementById('meterProgress').textContent=`0/0`;return;
