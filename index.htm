@@ -1214,25 +1214,37 @@ function renderRdChart(){
   const code=currentRoomCode;
   const col=rdChartType==='water'?'หน่วยน้ำ':'หน่วยไฟ';
   const color=rdChartType==='water'?'#4f8ef7':'#f7c94f';
+  const MONTHS=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   const now=new Date();
-  const months6=[];const labels6=[];
-  for(let i=5;i>=0;i--){
+  const months7=[];const labels6=[];
+  // ดึง 7 เดือน เพื่อคำนวณ 6 ช่วง
+  for(let i=6;i>=0;i--){
     let m=now.getMonth()+1-i;let y=now.getFullYear()+543;
     while(m<1){m+=12;y--;}
     const key=String(m).padStart(2,'0')+'/'+y;
     const row=DATA.meter.find(r=>normCode(r['ห้องเลขที่'])===normCode(code)&&(r['เดือน/ปี']||'')===key);
-    months6.push(row?parseFloat(row[col]||0):0);
-    labels6.push(['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'][m-1]);
+    months7.push({val:row?parseFloat(row[col]||0):null, m, y});
   }
-  mkBarChart('rdChart',labels6,months6,color);
-  const valid=months6.filter(x=>x>0);
+  // คำนวณหน่วยที่ใช้ = เดือนนี้ - เดือนก่อน
+  const units=[];
+  for(let i=1;i<months7.length;i++){
+    const cur=months7[i].val;
+    const prev=months7[i-1].val;
+    if(cur!==null&&prev!==null&&cur>=prev){
+      units.push(cur-prev);
+    }else{
+      units.push(0);
+    }
+    labels6.push(MONTHS[months7[i].m-1]);
+  }
+  mkBarChart('rdChart',labels6,units,color);
+  const valid=units.filter(x=>x>0);
   const avg=valid.length?Math.round(valid.reduce((a,b)=>a+b,0)/valid.length):0;
   const max=valid.length?Math.max(...valid):0;
   const min=valid.length?Math.min(...valid):0;
-  const unit=' หน่วย';
-  document.getElementById('rdAvg').textContent=avg+unit;
-  document.getElementById('rdMax').textContent=max+unit;
-  document.getElementById('rdMin').textContent=min+unit;
+  document.getElementById('rdAvg').textContent=avg+' หน่วย';
+  document.getElementById('rdMax').textContent=max+' หน่วย';
+  document.getElementById('rdMin').textContent=min+' หน่วย';
 }
 
 function calcDur2(dateStr){
