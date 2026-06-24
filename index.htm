@@ -686,12 +686,9 @@ function getPrevMeterReading(code){
   m-=1;if(m<1){m=12;y--;}
   const prevKey=String(m).padStart(2,'0')+'/'+y;
   const col=getMeterCol();
-  const curKey=getMeterMonthStr();
+  // หาเฉพาะเดือนก่อนหน้าเท่านั้น ไม่มี fallback
   const prevRow=DATA.meter.find(r=>normCode(r['ห้องเลขที่'])===normCode(code)&&(r['เดือน/ปี']||'')===prevKey);
-  if(prevRow&&prevRow[col])return prevRow[col];
-  const rows=DATA.meter.filter(r=>normCode(r['ห้องเลขที่'])===normCode(code)&&(r['เดือน/ปี']||'')!==curKey)
-    .sort((a,b)=>(a['เดือน/ปี']||'')>(b['เดือน/ปี']||'')?-1:1);
-  return rows[0]?rows[0][col]:'';
+  return prevRow&&prevRow[col]?prevRow[col]:'';
 }
 
 function renderMeterEntry(){
