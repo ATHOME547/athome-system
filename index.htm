@@ -544,7 +544,7 @@ let charts={};
 let dataLoaded=false;
 
 /* ---- RATES (Google Sheets ตั้งค่า) ---- */
-const RATE_DEFAULTS={r_shop:3000,r_air:2700,r_normal:2000,r_water:25,r_electric:7,r_common:0,r_car:300,r_moto:100};
+const RATE_DEFAULTS={r_shop:3000,r_air:2700,r_normal:2000,r_water:25,r_electric:7,r_common:0,r_car:300,r_moto:100,r_car_slots:14,r_moto_slots:41};
 const RATE_LABELS={r_shop:'ร้านค้า',r_air:'ห้องแอร์',r_normal:'ห้องธรรมดา',r_water:'ค่าน้ำ (ต่อหน่วย)',r_electric:'ค่าไฟ (ต่อหน่วย)',r_common:'ค่าส่วนกลาง',r_car:'จอดรถยนต์',r_moto:'จอดมอเตอร์ไซค์'};
 const RATE_UNITS={r_air:'บาท/เดือน',r_normal:'บาท/เดือน',r_shop:'บาท/เดือน',r_water:'บาท/หน่วย',r_electric:'บาท/หน่วย',r_common:'บาท/เดือน',r_car:'บาท/คัน',r_moto:'บาท/คัน'};
 const RATE_SHEET_KEYS=['ห้องแอร์','ห้องธรรมดา','ร้านค้า','ค่าน้ำ','ค่าไฟ','ค่าส่วนกลาง','จอดรถยนต์','จอดมอเตอร์ไซค์'];
@@ -1265,8 +1265,20 @@ function renderVehCard(t){
     const cars=(t['รถยนต์ล็อก']||'').split(',').filter(Boolean);
     const motos=(t['มอเตอร์ล็อก']||'').split(',').filter(Boolean);
     let rows='';
-    cars.forEach((lock,i)=>{rows+=`<div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--surface2);gap:10px;"><span style="font-size:16px;">🚗</span><span style="flex:1;font-size:12px;color:var(--text2);">รถยนต์ · คันที่ ${i+1}</span><input class="veh-input" data-type="car" data-idx="${i}" value="${lock.trim()}" style="background:var(--surface2);border:1.5px solid var(--border2);color:var(--text);padding:6px 8px;border-radius:7px;font-family:var(--mono);font-size:14px;font-weight:700;width:60px;text-align:center;"><span style="font-size:10px;color:var(--text3);">ล็อก</span><span onclick="removeVeh('car',${i})" style="color:var(--red);font-size:18px;cursor:pointer;padding:0 4px;">×</span></div>`;});
-    motos.forEach((lock,i)=>{rows+=`<div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--surface2);gap:10px;"><span style="font-size:16px;">🏍️</span><span style="flex:1;font-size:12px;color:var(--text2);">มอเตอร์ไซค์ · คันที่ ${i+1}</span><input class="veh-input" data-type="moto" data-idx="${i}" value="${lock.trim()}" style="background:var(--surface2);border:1.5px solid var(--border2);color:var(--text);padding:6px 8px;border-radius:7px;font-family:var(--mono);font-size:14px;font-weight:700;width:60px;text-align:center;"><span style="font-size:10px;color:var(--text3);">ล็อก</span><span onclick="removeVeh('moto',${i})" style="color:var(--red);font-size:18px;cursor:pointer;padding:0 4px;">×</span></div>`;});
+    cars.forEach((lock,i)=>{rows+=`<div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--surface2);gap:10px;">
+        <span style="font-size:16px;">🚗</span>
+        <span style="flex:1;font-size:12px;color:var(--text2);">รถยนต์ · คันที่ ${i+1}</span>
+        <div onclick="showParkingPicker('car','${lock.trim()}',s=>{changeLock('car',${i},s);})" style="background:var(--surface2);border:1.5px solid var(--border2);color:var(--yellow);padding:6px 10px;border-radius:7px;font-family:var(--mono);font-size:14px;font-weight:700;min-width:44px;text-align:center;cursor:pointer;">${lock.trim()}</div>
+        <input class="veh-input" data-type="car" data-idx="${i}" value="${lock.trim()}" style="display:none;">
+        <span onclick="removeVeh('car',${i})" style="color:var(--red);font-size:18px;cursor:pointer;padding:0 4px;">×</span>
+      </div>`;});
+    motos.forEach((lock,i)=>{rows+=`<div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--surface2);gap:10px;">
+        <span style="font-size:16px;">🏍️</span>
+        <span style="flex:1;font-size:12px;color:var(--text2);">มอเตอร์ไซค์ · คันที่ ${i+1}</span>
+        <div onclick="showParkingPicker('moto','${lock.trim()}',s=>{changeLock('moto',${i},s);})" style="background:var(--surface2);border:1.5px solid var(--border2);color:var(--yellow);padding:6px 10px;border-radius:7px;font-family:var(--mono);font-size:14px;font-weight:700;min-width:44px;text-align:center;cursor:pointer;">${lock.trim()}</div>
+        <input class="veh-input" data-type="moto" data-idx="${i}" value="${lock.trim()}" style="display:none;">
+        <span onclick="removeVeh('moto',${i})" style="color:var(--red);font-size:18px;cursor:pointer;padding:0 4px;">×</span>
+      </div>`;});
     rows+=`<button onclick="addVeh('car')" style="width:100%;padding:9px;background:transparent;border:none;border-top:1px dashed var(--border2);color:var(--blue);font-family:var(--font);font-size:12px;cursor:pointer;text-align:left;padding-left:14px;">+ เพิ่มรถยนต์</button>`;
     rows+=`<button onclick="addVeh('moto')" style="width:100%;padding:9px;background:transparent;border:none;border-top:1px dashed var(--border2);color:var(--blue);font-family:var(--font);font-size:12px;cursor:pointer;text-align:left;padding-left:14px;">+ เพิ่มมอเตอร์ไซค์</button>`;
     rows+=`<div style="display:flex;gap:8px;padding:10px 14px;"><button onclick="cancelVehEdit()" style="flex:1;padding:9px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);border-radius:8px;font-family:var(--font);font-size:13px;cursor:pointer;">ยกเลิก</button><button onclick="saveVeh()" style="flex:2;padding:9px;background:var(--green);color:#000;border:none;border-radius:8px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;">💾 บันทึก</button></div>`;
@@ -1291,9 +1303,24 @@ function toggleVehEdit(){vehEditMode=true;renderVehCard(findTenant());}
 function cancelVehEdit(){vehEditMode=false;renderVehCard(findTenant());}
 
 function addVeh(type){
+  showParkingPicker(type, null, (slot)=>{
+    const t=findTenant();
+    const key=type==='car'?'รถยนต์ล็อก':'มอเตอร์ล็อก';
+    t[key]=(t[key]?t[key]+',':'')+slot;
+    vehEditMode=true;
+    renderVehCard(t);
+  });
+}
+
+function changeLock(type,idx,newSlot){
   const t=findTenant();
-  if(type==='car'){t['รถยนต์ล็อก']=(t['รถยนต์ล็อก']?t['รถยนต์ล็อก']+',':'')+'00';}
-  else{t['มอเตอร์ล็อก']=(t['มอเตอร์ล็อก']?t['มอเตอร์ล็อก']+',':'')+'00';}
+  const key=type==='car'?'รถยนต์ล็อก':'มอเตอร์ล็อก';
+  const arr=(t[key]||'').split(',').filter(Boolean);
+  arr[idx]=newSlot;
+  t[key]=arr.join(',');
+  // update hidden input
+  document.querySelectorAll(`.veh-input[data-type="${type}"][data-idx="${idx}"]`).forEach(el=>el.value=newSlot);
+  vehEditMode=true;
   renderVehCard(t);
 }
 
@@ -1310,9 +1337,41 @@ async function saveVeh(){
   const t=findTenant();
   const inputs=document.querySelectorAll('.veh-input');
   const cars=[];const motos=[];
-  inputs.forEach(el=>{if(el.dataset.type==='car')cars[parseInt(el.dataset.idx)]=el.value;else motos[parseInt(el.dataset.idx)]=el.value;});
-  t['รถยนต์ล็อก']=cars.filter(Boolean).join(',');
-  t['มอเตอร์ล็อก']=motos.filter(Boolean).join(',');
+  inputs.forEach(el=>{
+    if(el.dataset.type==='car')cars[parseInt(el.dataset.idx)]=el.value.trim();
+    else motos[parseInt(el.dataset.idx)]=el.value.trim();
+  });
+  const newCars=cars.filter(Boolean);
+  const newMotos=motos.filter(Boolean);
+  
+  // Check duplicate within same tenant
+  const allNew=[...newCars,...newMotos];
+  const dupsOwn=allNew.filter((v,i)=>allNew.indexOf(v)!==i);
+  if(dupsOwn.length){alert('มีเลขล็อกซ้ำกัน: '+[...new Set(dupsOwn)].join(', '));return;}
+  
+  // Check duplicate with other tenants
+  const dupsWith=[];
+  DATA.tenants.forEach(other=>{
+    if(other===t||other['วันที่ออก'])return;
+    const otherLocks=[
+      ...(other['รถยนต์ล็อก']||'').split(',').filter(Boolean),
+      ...(other['มอเตอร์ล็อก']||'').split(',').filter(Boolean)
+    ].map(x=>x.trim());
+    allNew.forEach(lock=>{
+      if(otherLocks.includes(lock)){
+        dupsWith.push(`ล็อก ${lock} (${other['ห้องเลขที่']} - ${other['ชื่อ-นามสกุล']})`);
+      }
+    });
+  });
+  if(dupsWith.length){
+    alert('เลขล็อกซ้ำกับผู้เช่าอื่น:
+'+dupsWith.join('
+'));
+    return;
+  }
+  
+  t['รถยนต์ล็อก']=newCars.join(',');
+  t['มอเตอร์ล็อก']=newMotos.join(',');
   try{
     const idx2=DATA.tenants.indexOf(t)+1;
     const res=await apiPost({sheet:'ผู้เช่า',action:'update_row',rowIndex:idx2,data:{'รถยนต์ล็อก':t['รถยนต์ล็อก'],'มอเตอร์ล็อก':t['มอเตอร์ล็อก']}});
