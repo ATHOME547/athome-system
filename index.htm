@@ -1877,10 +1877,10 @@ function showParkingPicker(type,currentSlot,callback){
       div.style.background='#111';div.style.color='#333';div.style.border='1.5px solid var(--border2)';
     }else if(isSel){
       div.style.background='#1a3a2a';div.style.color='var(--green)';div.style.border='1.5px solid var(--green)';div.style.cursor='pointer';
-      div.onclick=()=>selectParkSlot(slot);
+      div.setAttribute('onclick','selectParkSlot("'+slot+'")');
     }else{
       div.style.background='var(--surface2)';div.style.color='var(--text)';div.style.border='1.5px solid var(--border2)';div.style.cursor='pointer';
-      div.onclick=()=>selectParkSlot(slot);
+      div.setAttribute('onclick','selectParkSlot("'+slot+'")');
     }
     gridEl.appendChild(div);
   }
